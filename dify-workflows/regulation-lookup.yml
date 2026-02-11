@@ -1,0 +1,325 @@
+app:
+  description: '交通法规条文智能查询，支持知识库RAG检索，根据关键词或上下文检索相关法规并格式化引用'
+  icon: "\U0001F4D6"
+  icon_background: '#D5E8FF'
+  icon_type: emoji
+  mode: workflow
+  name: regulation-lookup
+  use_icon_as_answer_icon: false
+dependencies: []
+kind: app
+version: 0.3.1
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      enabled: false
+    opening_statement: ''
+    retriever_resource:
+      enabled: false
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: start
+        targetType: knowledge-retrieval
+      id: start-to-kr
+      source: start_node
+      sourceHandle: source
+      target: kr_regulations
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: knowledge-retrieval
+        targetType: llm
+      id: kr-to-llm
+      source: kr_regulations
+      sourceHandle: source
+      target: llm_node
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: code
+      id: llm-to-code
+      source: llm_node
+      sourceHandle: source
+      target: code_citation
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: end
+      id: code-to-end
+      source: code_citation
+      sourceHandle: source
+      target: end_node
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        desc: '输入查询关键词或文案上下文'
+        selected: false
+        title: 开始
+        type: start
+        variables:
+        - label: 查询内容
+          max_length: 1000
+          options: []
+          required: true
+          type: paragraph
+          variable: query
+        - label: 查询类型
+          max_length: null
+          options:
+          - keyword
+          - context
+          required: true
+          type: select
+          variable: query_type
+      height: 90
+      id: start_node
+      position:
+        x: 30
+        y: 227
+      positionAbsolute:
+        x: 30
+        y: 227
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: '从交通法规知识库中检索相关条文。需在Dify中创建 traffic-regulations 知识库并在此节点配置 dataset_ids。未配置时此节点返回空结果，LLM将使用内置知识。'
+        title: 法规知识库检索
+        type: knowledge-retrieval
+        query_variable_selector:
+        - start_node
+        - query
+        dataset_ids: []
+        retrieval_mode: multiple
+        multiple_retrieval_config:
+          top_k: 3
+          score_threshold: 0.5
+          reranking_enable: false
+      height: 90
+      id: kr_regulations
+      position:
+        x: 334
+        y: 227
+      positionAbsolute:
+        x: 334
+        y: 227
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: '结合知识库检索结果和内置法规知识，生成结构化法规查询结果'
+        title: 法规查询
+        type: llm
+        model:
+          provider: deepseek
+          name: deepseek-chat
+          mode: chat
+          completion_params:
+            temperature: 0.1
+        prompt_template:
+        - role: system
+          text: |
+            你是一名精通中国道路交通法规的法律顾问，专门为交警宣传部门提供法规查询服务。
+
+            ## 你的知识库涵盖
+
+            1. 《中华人民共和国道路交通安全法》（2021年修正）
+            2. 《中华人民共和国道路交通安全法实施条例》
+            3. 《机动车驾驶证申领和使用规定》（公安部令第162号）
+            4. 《道路交通安全违法行为记分管理办法》（公安部令第163号）
+            5. 《道路交通事故处理程序规定》
+            6. 其他相关行政法规和部门规章
+
+            ## 查询类型说明
+
+            - **keyword**：用户输入关键词（如"酒驾"、"超速"、"闯红灯"），你需要返回所有相关的法规条文
+            - **context**：用户输入一段文案内容，你需要识别其中涉及的法律问题，并返回可引用的法规条文
+
+            ## 输出格式
+
+            请严格按以下 JSON 格式输出（不要添加任何额外文字说明，只输出纯JSON）：
+
+            ```json
+            {
+              "regulations": [
+                {
+                  "law_name": "法规全称",
+                  "article": "第X条",
+                  "clause": "第X款（如有）",
+                  "content": "条文原文内容",
+                  "relevance": "与查询内容的关联说明",
+                  "citation_format": "用于文案引用的标准格式，如：根据《道路交通安全法》第九十一条规定，……"
+                }
+              ],
+              "summary": "查询结果总结，简要说明涉及的主要法律要点"
+            }
+            ```
+
+            ## 注意事项
+
+            1. 只引用你确定准确的法规条文，不确定的请标注"（请核实具体条款）"
+            2. 优先引用上位法（法律 > 行政法规 > 部门规章）
+            3. 如涉及处罚标准，注明具体的罚款金额、记分分值等
+            4. 提供的 citation_format 应可直接嵌入宣传文案中使用
+            5. 如果系统提供了知识库检索结果，请优先参考检索到的法规原文
+        - role: user
+          text: |
+            查询类型：{{#start_node.query_type#}}
+
+            查询内容：
+            {{#start_node.query#}}
+        vision:
+          enabled: false
+          configs:
+            variable_selector: []
+        memory:
+          enabled: false
+          window:
+            enabled: false
+            size: 50
+        context:
+          enabled: true
+          variable_selector:
+          - kr_regulations
+          - result
+        structured_output:
+          enabled: false
+        retry_config:
+          enabled: false
+          max_retries: 1
+          retry_interval: 1000
+          exponential_backoff:
+            enabled: false
+            multiplier: 2
+            max_interval: 10000
+      height: 90
+      id: llm_node
+      position:
+        x: 638
+        y: 227
+      positionAbsolute:
+        x: 638
+        y: 227
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: '从LLM的JSON输出中提取可直接嵌入文案的法规引用格式文本'
+        title: 引用格式提取
+        type: code
+        code_language: python3
+        code: |
+          def main(result: str) -> dict:
+              import json
+
+              try:
+                  text = result.strip()
+                  if '```json' in text:
+                      text = text.split('```json')[1].split('```')[0].strip()
+                  elif '```' in text:
+                      text = text.split('```')[1].split('```')[0].strip()
+
+                  data = json.loads(text)
+                  regulations = data.get("regulations", [])
+
+                  citation_texts = []
+                  for reg in regulations:
+                      citation = reg.get("citation_format", "")
+                      if citation:
+                          citation_texts.append(citation)
+
+                  return {
+                      "citation_texts": "\n".join(citation_texts) if citation_texts else "未找到相关法规引用"
+                  }
+              except Exception:
+                  return {
+                      "citation_texts": "法规引用解析失败，请查看原始结果"
+                  }
+        variables:
+        - value_selector:
+          - llm_node
+          - text
+          variable: result
+        outputs:
+          citation_texts:
+            type: string
+            children: null
+      height: 90
+      id: code_citation
+      position:
+        x: 942
+        y: 227
+      positionAbsolute:
+        x: 942
+        y: 227
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: ''
+        outputs:
+        - value_selector:
+          - llm_node
+          - text
+          value_type: string
+          variable: result
+        - value_selector:
+          - code_citation
+          - citation_texts
+          value_type: string
+          variable: citation_texts
+        selected: false
+        title: 输出
+        type: end
+      height: 90
+      id: end_node
+      position:
+        x: 1246
+        y: 227
+      positionAbsolute:
+        x: 1246
+        y: 227
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    viewport:
+      x: 0
+      y: 0
+      zoom: 0.7

@@ -1,0 +1,66 @@
+@import "tailwindcss";
+
+:root {
+  --gov-primary: #1e40af;
+  --gov-primary-dark: #1e3a8a;
+  --gov-primary-light: #3b82f6;
+  --gov-secondary: #dc2626;
+  --gov-bg: #f8fafc;
+  --gov-border: #e2e8f0;
+  --gov-text: #1e293b;
+  --gov-text-light: #64748b;
+  --gov-success: #16a34a;
+  --gov-warning: #f59e0b;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  background: var(--gov-bg);
+  color: var(--gov-text);
+  line-height: 1.6;
+}
+
+h1 {
+  font-size: 1.875rem;
+  font-weight: 700;
+  line-height: 2.25rem;
+  margin: 0;
+}
+
+h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 2rem;
+  margin: 0;
+}
+
+h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.75rem;
+  margin: 0;
+}
+
+h4 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  line-height: 1.5rem;
+  margin: 0;
+}
+
+button {
+  font-family: inherit;
+}
+
+input, textarea, select {
+  font-family: inherit;
+}
+
+.gov-gradient {
+  background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+}

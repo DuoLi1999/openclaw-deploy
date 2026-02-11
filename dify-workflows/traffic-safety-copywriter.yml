@@ -1,0 +1,1107 @@
+app:
+  description: '交通安全宣传文案端到端生成管线：选题分析→初稿生成→反AI优化→格式校验→敏感词审核→平台适配输出'
+  icon: "\U0001F693"
+  icon_background: '#E4FBCC'
+  icon_type: emoji
+  mode: workflow
+  name: traffic-safety-copywriter
+  use_icon_as_answer_icon: false
+dependencies: []
+kind: app
+version: 0.3.1
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      enabled: false
+    opening_statement: ''
+    retriever_resource:
+      enabled: false
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: start
+        targetType: llm
+      id: start-to-topic
+      source: start_node
+      sourceHandle: source
+      target: llm_topic
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: llm
+      id: topic-to-draft
+      source: llm_topic
+      sourceHandle: source
+      target: llm_draft
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: llm
+      id: draft-to-antiai
+      source: llm_draft
+      sourceHandle: source
+      target: llm_anti_ai
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: code
+      id: antiai-to-format
+      source: llm_anti_ai
+      sourceHandle: source
+      target: code_format
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: llm
+      id: format-to-sensitive
+      source: code_format
+      sourceHandle: source
+      target: llm_sensitive
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: code
+      id: sensitive-to-audit
+      source: llm_sensitive
+      sourceHandle: source
+      target: code_audit
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: if-else
+      id: audit-to-ifelse
+      source: code_audit
+      sourceHandle: source
+      target: if_else_pass
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: if-else
+        targetType: template-transform
+      id: ifelse-to-template-pass
+      source: if_else_pass
+      sourceHandle: 'true'
+      target: template_output
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: if-else
+        targetType: llm
+      id: ifelse-to-revision
+      source: if_else_pass
+      sourceHandle: 'false'
+      target: llm_revision
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: template-transform
+      id: revision-to-template
+      source: llm_revision
+      sourceHandle: source
+      target: template_revised
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: template-transform
+        targetType: variable-aggregator
+      id: template-pass-to-agg
+      source: template_output
+      sourceHandle: source
+      target: agg_result
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: template-transform
+        targetType: variable-aggregator
+      id: template-revised-to-agg
+      source: template_revised
+      sourceHandle: source
+      target: agg_result
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: variable-aggregator
+        targetType: end
+      id: agg-to-end
+      source: agg_result
+      sourceHandle: source
+      target: end_node
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        desc: '用户输入文案生成所需的主题、风格、平台等参数'
+        selected: false
+        title: 开始
+        type: start
+        variables:
+        - label: 主题关键词
+          max_length: 200
+          options: []
+          required: true
+          type: text-input
+          variable: topic
+        - label: 补充描述
+          max_length: 500
+          options: []
+          required: false
+          type: paragraph
+          variable: description
+        - label: 文案风格
+          max_length: null
+          options:
+          - formal
+          - friendly
+          - humorous
+          - warning
+          required: true
+          type: select
+          variable: style
+        - label: 目标平台
+          max_length: null
+          options:
+          - weibo
+          - wechat_mp
+          - douyin
+          - kuaishou
+          - toutiao
+          required: true
+          type: select
+          variable: platform
+        - label: 参考素材
+          max_length: 2000
+          options: []
+          required: false
+          type: paragraph
+          variable: reference
+      height: 90
+      id: start_node
+      position:
+        x: 30
+        y: 282
+      positionAbsolute:
+        x: 30
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: '基于content-strategy方法论，为单篇内容做快速选题分析'
+        title: 选题角度分析
+        type: llm
+        model:
+          provider: deepseek
+          name: deepseek-chat
+          mode: chat
+          completion_params:
+            temperature: 0.7
+        prompt_template:
+        - role: system
+          text: |
+            你是一名资深的交警宣传内容策略师。你的任务是为单篇交通安全宣传内容做快速选题分析，不需要完整的策略报告，只需要精准的选题方向。
+
+            ## 分析框架
+
+            ### 1. 可搜索 vs 可分享判断
+            - 该主题更适合做可搜索内容（回答具体问题）还是可分享内容（引发传播）？
+            - 如果是可搜索：明确搜索意图和关键词
+            - 如果是可分享：明确传播驱动力（情感共鸣/实用价值/新奇观点）
+
+            ### 2. 受众阶段映射
+            判断目标受众处于哪个阶段：
+            - 认知阶段：不了解规则 → 需要法规科普
+            - 行为阶段：知道但做不到 → 需要操作指南
+            - 情感阶段：需要被触动 → 需要警示案例
+            - 传播阶段：愿意分享 → 需要提醒类内容
+
+            ### 3. Hook策略选择
+            根据平台和风格选择最佳的开头策略：
+            - 数据冲击："每年XX万人因XX…"
+            - 场景代入："你是否也曾在XX时…"
+            - 反常识："你以为XX，其实…"
+            - 情感触发："那天，一个XX岁的孩子…"
+            - 权威引用："根据最新规定…"
+
+            ## 输出格式（简洁明了）
+
+            **选题类型**：可搜索/可分享
+            **受众阶段**：认知/行为/情感/传播
+            **核心信息点**：（一句话概括本篇要传递的核心信息）
+            **Hook策略**：（选用的开头策略及具体建议）
+            **情绪目标**：（希望读者读完后的情绪状态：警醒/安心/感动/行动）
+            **关键词/标签建议**：（3-5个）
+        - role: user
+          text: |
+            请为以下主题做选题角度分析：
+
+            **主题**：{{#start_node.topic#}}
+            **补充描述**：{{#start_node.description#}}
+            **目标风格**：{{#start_node.style#}}
+            **目标平台**：{{#start_node.platform#}}
+            **参考素材**：{{#start_node.reference#}}
+        vision:
+          enabled: false
+          configs:
+            variable_selector: []
+        memory:
+          enabled: false
+          window:
+            enabled: false
+            size: 50
+        context:
+          enabled: false
+          variable_selector: []
+        structured_output:
+          enabled: false
+        retry_config:
+          enabled: false
+          max_retries: 1
+          retry_interval: 1000
+          exponential_backoff:
+            enabled: false
+            multiplier: 2
+            max_interval: 10000
+      height: 90
+      id: llm_topic
+      position:
+        x: 334
+        y: 282
+      positionAbsolute:
+        x: 334
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: '融合copywriting、script-writer、luka-short-video-script方法论，根据平台动态适配生成初稿'
+        title: 初稿生成
+        type: llm
+        model:
+          provider: deepseek
+          name: deepseek-chat
+          mode: chat
+          completion_params:
+            temperature: 0.8
+        prompt_template:
+        - role: system
+          text: |
+            你是一名资深的交警宣传部门专业文案编辑，拥有丰富的交通安全宣传内容创作经验。
+
+            ## 核心写作原则（copywriting方法论）
+
+            1. **清晰度优先于花哨**：每一句话都要让读者立刻明白你在说什么
+            2. **Features → Benefits → Outcomes**：不只说"法规规定XX"（特征），要说"这意味着你XX"（好处），最终落到"所以你和家人能XX"（结果）
+            3. **Claim Discipline（主张纪律）**：每个断言必须有支撑——法规条文、数据来源、真实案例。不编造、不夸大
+            4. **一篇一核心**：每篇文案只传递一个核心信息，不贪多
+
+            ## 风格定义
+
+            - **formal**（严肃正式）：用语规范严谨，适合官方通报、政策解读。使用书面语，引用法规条文时注明出处。语气权威、庄重。
+            - **friendly**（亲民温和）：贴近群众生活，语气亲切友善，如邻里间的善意提醒。可使用口语化表达，举贴近生活的例子。
+            - **humorous**（幽默风趣）：善用比喻、反讽、网络流行语，以轻松幽默的方式传递安全知识。适合吸引年轻受众，但不可消解交通安全的严肃性。
+            - **warning**（警示教育）：通过真实或典型案例进行警示，语气严厉，强调违法后果和安全代价。适当引用事故数据增强说服力。
+
+            ## 平台适配规则
+
+            **如果平台是 weibo（微博）**：
+            - 严格不超过140字
+            - 简洁有力，金句式表达
+            - 可带话题标签 #交通安全# 等
+            - 适合使用数据冲击、反问句式
+
+            **如果平台是 wechat_mp（微信公众号）**：
+            - 800-2000字
+            - 结构清晰：开头引入→主体分段（至少3个小标题）→结尾号召
+            - 可使用emoji增强可读性
+            - 段落之间有过渡，逻辑连贯
+
+            **如果平台是 douyin（抖音短视频脚本）**：
+            - 不超过300字口播文案
+            - 使用时间轴格式：[00:00-00:03] 开场Hook → [00:03-00:15] 正文 → [00:XX-结尾] CTA
+            - 语言要口语化，短句为主（每句不超过15字），长短句交替
+            - 前3秒必须有强Hook
+            - 附带分镜建议
+
+            **如果平台是 kuaishou（快手短视频脚本）**：
+            - 不超过300字口播文案
+            - 风格更接地气、贴近生活
+            - 使用时间轴格式，同抖音
+            - 语言更朴实自然，避免"网红腔"
+            - 附带拍摄建议
+
+            **如果平台是 toutiao（头条号）**：
+            - 500-1500字
+            - 标题要信息量大但不标题党
+            - 正文段落分明，信息密度高
+            - 适合深度解读、多角度分析
+
+            ## 输出要求
+
+            1. 严格遵守目标平台的字数限制和格式要求
+            2. 如涉及交通法规，准确引用条文编号
+            3. 不编造虚假数据或案例
+            4. 内容积极向上，符合政务宣传口径
+            5. 直接输出文案正文，不要输出"以下是文案"之类的前导语
+        - role: user
+          text: |
+            请基于以下选题分析结果，生成交通安全宣传文案初稿：
+
+            **主题**：{{#start_node.topic#}}
+            **补充描述**：{{#start_node.description#}}
+            **文案风格**：{{#start_node.style#}}
+            **目标平台**：{{#start_node.platform#}}
+            **参考素材**：{{#start_node.reference#}}
+
+            **选题分析**：
+            {{#llm_topic.text#}}
+        vision:
+          enabled: false
+          configs:
+            variable_selector: []
+        memory:
+          enabled: false
+          window:
+            enabled: false
+            size: 50
+        context:
+          enabled: false
+          variable_selector: []
+        structured_output:
+          enabled: false
+        retry_config:
+          enabled: false
+          max_retries: 1
+          retry_interval: 1000
+          exponential_backoff:
+            enabled: false
+            multiplier: 2
+            max_interval: 10000
+      height: 90
+      id: llm_draft
+      position:
+        x: 638
+        y: 282
+      positionAbsolute:
+        x: 638
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: '基于shorts-script-personality方法论，对初稿做去AI味处理，保持信息完整性'
+        title: 反AI优化
+        type: llm
+        model:
+          provider: deepseek
+          name: deepseek-chat
+          mode: chat
+          completion_params:
+            temperature: 0.5
+        prompt_template:
+        - role: system
+          text: |
+            你是一名文案润色专家。你的任务是对AI生成的交通安全宣传文案进行"去AI味"处理，让文案读起来像是有经验的人类编辑写的。
+
+            ## 7大禁止项（必须消除）
+
+            1. **三词重复模式**：禁止出现"XX、XX、XX"这样的三联排比，如"安全、文明、有序"。改用自然叙述。
+            2. **问答列表模式**：禁止"你知道XX吗？其实XX。"这样的自问自答格式。直接陈述。
+            3. **套路开场/结尾**：
+               - 禁止开头："在这个XX的时代…"、"随着XX的发展…"、"你是否曾经…"
+               - 禁止结尾："让我们一起XX吧！"、"安全出行，从我做起"等套话
+            4. **假设场景**：禁止"想象一下，如果你…"这样的假设句式。用真实案例或直接描述。
+            5. **机械列表过渡**：禁止"首先…其次…再次…最后…"。用自然段落转折。
+            6. **夸张用词**：禁止"至关重要"、"不可或缺"、"举足轻重"等AI常用的夸张形容词。用具体描述替代。
+            7. **套话短语**：禁止"总而言之"、"综上所述"、"值得注意的是"、"毋庸置疑"等。
+
+            ## 优化方向
+
+            - **句式流动**：短句长句交替，避免匀速节奏。偶尔用一个只有几个字的短句打断长段
+            - **口语感**：在非formal风格中，适当加入口语表达，让文字有呼吸感
+            - **具体化**：把抽象表述替换为具体的数字、场景、人物
+            - **信息保全**：所有法规引用、数据、核心信息点必须保留，只改表达方式不改信息内容
+
+            ## 处理原则
+
+            - 只改表达方式，不改内容和信息
+            - 保留所有法规引用和数据
+            - **严格保持原文的字数范围**，绝不能显著增加字数。微博文案必须≤140字，短视频脚本必须≤300字
+            - 保持原文的结构（小标题、时间轴等）
+            - 如果原文有[00:00]时间轴格式，必须保留
+            - 直接输出优化后的文案，不要说明修改了哪里
+        - role: user
+          text: |
+            请对以下交通安全宣传文案进行反AI优化处理。文案风格为{{#start_node.style#}}，目标平台为{{#start_node.platform#}}。
+
+            ---
+            {{#llm_draft.text#}}
+            ---
+        vision:
+          enabled: false
+          configs:
+            variable_selector: []
+        memory:
+          enabled: false
+          window:
+            enabled: false
+            size: 50
+        context:
+          enabled: false
+          variable_selector: []
+        structured_output:
+          enabled: false
+        retry_config:
+          enabled: false
+          max_retries: 1
+          retry_interval: 1000
+          exponential_backoff:
+            enabled: false
+            multiplier: 2
+            max_interval: 10000
+      height: 90
+      id: llm_anti_ai
+      position:
+        x: 942
+        y: 282
+      positionAbsolute:
+        x: 942
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: '根据平台规范校验字数、结构等硬性指标'
+        title: 格式校验
+        type: code
+        code_language: python3
+        code: |
+          def main(content: str, platform: str) -> dict:
+              import re
+
+              text = re.sub(r'[\n\r\t]', '', content)
+              text_clean = re.sub(r'[#*_\[\]()（）【】「」『』\-—…]', '', text)
+              char_count = len(text_clean)
+
+              issues = []
+              is_format_ok = "true"
+
+              if platform == "weibo":
+                  if char_count > 140:
+                      issues.append("微博文案超出字数限制：当前" + str(char_count) + "字，上限140字")
+                      is_format_ok = "false"
+              elif platform == "wechat_mp":
+                  if char_count < 800:
+                      issues.append("微信公众号文案字数不足：当前" + str(char_count) + "字，建议800-2000字")
+                      is_format_ok = "false"
+                  elif char_count > 2000:
+                      issues.append("微信公众号文案超出建议字数：当前" + str(char_count) + "字，建议800-2000字")
+                  subtitle_patterns = re.findall(r'(?:^|\n)\s*(?:#{1,3}\s|[一二三四五六七八九十]+[、.．]|[0-9]+[、.．])', content)
+                  if len(subtitle_patterns) < 3:
+                      issues.append("微信公众号文案小标题不足：当前" + str(len(subtitle_patterns)) + "个，建议至少3个")
+                      is_format_ok = "false"
+              elif platform in ("douyin", "kuaishou"):
+                  oral_text = content
+                  oral_text = re.sub(r'[（(][^）)]*(?:画面|镜头|切换|定版|屏幕|字幕)[^）)]*[）)]', '', oral_text)
+                  oral_text = re.sub(r'\*\*[^*]*(?:画面|镜头|切换|定版)[^*]*\*\*', '', oral_text)
+                  oral_text = re.sub(r'\*\*口播[：:]*\*\*', '', oral_text)
+                  oral_text = re.sub(r'\*\*\[[\d:—\-]+\][^*]*\*\*', '', oral_text)
+                  oral_text = re.sub(r'\[[\d:—\-]+\]\s*', '', oral_text)
+                  oral_text = re.sub(r'[#*_\[\]()（）【】「」『』\-—…\n\r\t]', '', oral_text)
+                  oral_text = re.sub(r'\s+', '', oral_text)
+                  oral_count = len(oral_text)
+                  char_count = oral_count
+                  if oral_count > 300:
+                      issues.append("短视频口播文字超出限制：当前约" + str(oral_count) + "字，上限300字（已排除分镜描述）")
+                      is_format_ok = "false"
+                  if not re.search(r'\[\d{2}:\d{2}', content):
+                      issues.append("短视频脚本缺少时间轴标记，建议添加[00:00]格式标记")
+              elif platform == "toutiao":
+                  if char_count < 500:
+                      issues.append("头条号文案字数不足：当前" + str(char_count) + "字，建议500-1500字")
+                      is_format_ok = "false"
+                  elif char_count > 1500:
+                      issues.append("头条号文案超出建议字数：当前" + str(char_count) + "字，建议500-1500字")
+
+              issues_text = "；".join(issues) if issues else "格式校验通过"
+
+              return {
+                  "is_format_ok": is_format_ok,
+                  "issues": issues_text,
+                  "char_count": char_count
+              }
+        variables:
+        - value_selector:
+          - llm_anti_ai
+          - text
+          variable: content
+        - value_selector:
+          - start_node
+          - platform
+          variable: platform
+        outputs:
+          is_format_ok:
+            type: string
+            children: null
+          issues:
+            type: string
+            children: null
+          char_count:
+            type: number
+            children: null
+      height: 90
+      id: code_format
+      position:
+        x: 1246
+        y: 282
+      positionAbsolute:
+        x: 1246
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: '5维度敏感词检测，输出结构化JSON审核报告'
+        title: 敏感词审核
+        type: llm
+        model:
+          provider: deepseek
+          name: deepseek-chat
+          mode: chat
+          completion_params:
+            temperature: 0.05
+        prompt_template:
+        - role: system
+          text: |
+            你是一名政务内容审核专家，负责检测交警宣传文案中的敏感内容。
+
+            ## 检测维度
+
+            1. **政治敏感**：涉及政治人物、政治事件、意识形态等不当表述
+            2. **法律风险**：未审先判的表述、侵犯隐私、歧视性用语
+            3. **事实准确**：错误的法规引用、不实数据、夸大其词
+            4. **用语不当**：不符合政务宣传口径、过于口语化或粗俗、可能引发争议的措辞
+            5. **暴力血腥**：过度描述事故伤亡细节、可能引发不适的画面描写
+
+            额外检查交通专业术语准确性：法规名称、处罚标准、交通术语规范性、执法程序准确性。
+
+            ## 重要：你的职责边界
+
+            你只负责检测内容层面的敏感问题。以下问题不属于你的职责，请勿在检测结果中提及：
+            - 字数是否超出平台限制
+            - 文案结构是否符合平台规范
+            - 时间轴格式是否正确
+            - 小标题数量是否足够
+            这些格式问题由专门的格式校验模块处理。
+
+            ## 输出格式
+
+            严格按以下JSON格式输出（只输出纯JSON，不要额外文字）：
+
+            ```json
+            {
+              "has_sensitive": true,
+              "summary": "整体评估（一句话）",
+              "items": [
+                {
+                  "word": "敏感词或敏感片段",
+                  "position": "所在上下文",
+                  "level": "error/warning/info",
+                  "category": "检测维度",
+                  "reason": "判定原因",
+                  "suggestion": "建议替换内容"
+                }
+              ]
+            }
+            ```
+
+            无问题时返回：
+            ```json
+            {"has_sensitive": false, "summary": "文案内容合规", "items": []}
+            ```
+        - role: user
+          text: |
+            请审核以下交警宣传文案：
+
+            ---
+            {{#llm_anti_ai.text#}}
+            ---
+        vision:
+          enabled: false
+          configs:
+            variable_selector: []
+        memory:
+          enabled: false
+          window:
+            enabled: false
+            size: 50
+        context:
+          enabled: false
+          variable_selector: []
+        structured_output:
+          enabled: false
+        retry_config:
+          enabled: false
+          max_retries: 1
+          retry_interval: 1000
+          exponential_backoff:
+            enabled: false
+            multiplier: 2
+            max_interval: 10000
+      height: 90
+      id: llm_sensitive
+      position:
+        x: 1550
+        y: 282
+      positionAbsolute:
+        x: 1550
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: '解析审核JSON，判断是否通过（error=0且warning<=2）'
+        title: 审核判定
+        type: code
+        code_language: python3
+        code: |
+          def main(audit_result: str, is_format_ok: str, format_issues: str) -> dict:
+              import json
+
+              format_passed = is_format_ok == "true"
+
+              try:
+                  text = audit_result.strip()
+                  if '```json' in text:
+                      text = text.split('```json')[1].split('```')[0].strip()
+                  elif '```' in text:
+                      text = text.split('```')[1].split('```')[0].strip()
+
+                  data = json.loads(text)
+                  has_sensitive = data.get("has_sensitive", False)
+                  items = data.get("items", [])
+                  error_count = sum(1 for item in items if item.get("level") == "error")
+                  warning_count = sum(1 for item in items if item.get("level") == "warning")
+                  content_passed = (not has_sensitive) or (error_count == 0 and warning_count <= 2)
+              except Exception:
+                  content_passed = True
+                  error_count = 0
+                  warning_count = 0
+
+              is_passed = "true" if (format_passed and content_passed) else "false"
+              audit_status = "passed" if is_passed == "true" else "needs_revision"
+
+              all_issues = []
+              if not format_passed:
+                  all_issues.append(format_issues)
+              if not content_passed:
+                  all_issues.append("敏感词审核未通过(error:" + str(error_count) + ", warning:" + str(warning_count) + ")")
+              combined_issues = "；".join(all_issues) if all_issues else "全部检查通过"
+
+              return {
+                  "is_passed": is_passed,
+                  "audit_status": audit_status,
+                  "error_count": error_count,
+                  "warning_count": warning_count,
+                  "combined_issues": combined_issues
+              }
+        variables:
+        - value_selector:
+          - llm_sensitive
+          - text
+          variable: audit_result
+        - value_selector:
+          - code_format
+          - is_format_ok
+          variable: is_format_ok
+        - value_selector:
+          - code_format
+          - issues
+          variable: format_issues
+        outputs:
+          is_passed:
+            type: string
+            children: null
+          audit_status:
+            type: string
+            children: null
+          error_count:
+            type: number
+            children: null
+          warning_count:
+            type: number
+            children: null
+          combined_issues:
+            type: string
+            children: null
+      height: 90
+      id: code_audit
+      position:
+        x: 1854
+        y: 282
+      positionAbsolute:
+        x: 1854
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: '根据审核结果决定直接输出或进入修订流程'
+        title: 审核通过判断
+        type: if-else
+        cases:
+        - case_id: 'true'
+          conditions:
+          - comparison_operator: is
+            id: cond-is-passed
+            value: 'true'
+            varType: string
+            variable_selector:
+            - code_audit
+            - is_passed
+          id: 'true'
+          logical_operator: and
+      height: 90
+      id: if_else_pass
+      position:
+        x: 2158
+        y: 282
+      positionAbsolute:
+        x: 2158
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: '审核通过，按平台规范格式化最终输出'
+        title: 平台格式化输出
+        type: template-transform
+        template: |
+          {{ content }}
+
+          ---
+          📊 文案信息
+          - 平台：{% if platform == 'weibo' %}微博{% elif platform == 'wechat_mp' %}微信公众号{% elif platform == 'douyin' %}抖音{% elif platform == 'kuaishou' %}快手{% elif platform == 'toutiao' %}头条号{% else %}{{ platform }}{% endif %}
+          - 字数：约{{ char_count }}字
+          - 审核状态：✅ 通过
+
+          📅 发布建议
+          {% if platform == 'weibo' %}- 最佳发布时间：工作日 12:00-13:00 或 20:00-22:00
+          - 建议带话题标签：#交通安全# #{{ topic }}#
+          - 可配合1-2张信息图增强传播{% elif platform == 'wechat_mp' %}- 最佳发布时间：工作日 7:00-9:00 或 20:00-22:00
+          - 建议配置封面图和文章摘要
+          - 文末建议添加引导关注/转发的行动号召{% elif platform == 'douyin' %}- 最佳发布时间：12:00-14:00 或 18:00-22:00
+          - 建议BGM：根据风格选择轻快或紧张类配乐
+          - 封面突出主题文字，建议添加字幕{% elif platform == 'kuaishou' %}- 最佳发布时间：12:00-14:00 或 18:00-21:00
+          - 风格偏生活化接地气
+          - 建议BGM：流行或民间类配乐{% elif platform == 'toutiao' %}- 最佳发布时间：7:00-9:00 或 18:00-20:00
+          - 标题要信息量大，避免标题党
+          - 建议配3-5张相关图片{% endif %}
+        variables:
+        - value_selector:
+          - llm_anti_ai
+          - text
+          variable: content
+        - value_selector:
+          - start_node
+          - platform
+          variable: platform
+        - value_selector:
+          - start_node
+          - topic
+          variable: topic
+        - value_selector:
+          - code_format
+          - char_count
+          variable: char_count
+      height: 90
+      id: template_output
+      position:
+        x: 2462
+        y: 132
+      positionAbsolute:
+        x: 2462
+        y: 132
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: '审核不通过时，根据审核报告修改问题部分，保持其他内容不变'
+        title: 审核修订
+        type: llm
+        model:
+          provider: deepseek
+          name: deepseek-chat
+          mode: chat
+          completion_params:
+            temperature: 0.5
+        prompt_template:
+        - role: system
+          text: |
+            你是一名文案修订专家。你的任务是根据敏感词审核报告和格式校验结果，修改文案中的问题部分。
+
+            ## 最高优先级：字数合规
+
+            如果格式校验报告指出字数超标，你必须将文案压缩到限制范围内。这是最高优先级，高于"最小改动"原则。
+            - 微博超标时：完全重写，只保留一个核心观点，目标100-130字（含标点标签）
+            - 短视频超标时：精简口播内容到250字以内，分镜描述可以保留
+            - 压缩策略：删除重复表述 → 删除修饰语 → 合并相似段落 → 精简次要信息。核心信息和法规引用最后删
+
+            ## 修订原则
+
+            1. **字数合规优先**：如果字数超标，必须大幅精简，不要试图保留所有内容
+            2. **最小改动**：在字数合规的前提下，只修改审核报告指出的问题部分
+            3. **保持风格**：修改后的内容要与原文风格一致
+            4. **保留结构**：不改变文案的整体结构（小标题、时间轴等）
+            5. **信息不丢**：修改敏感表述时，尽量保留信息传达意图
+            6. **直接输出**：直接输出修订后的完整文案，不要说明修改了哪里
+
+            ## 平台字数硬性要求（必须严格遵守）
+
+            - weibo（微博）：修订后总字数严格不超过140字，含标点和标签。目标100-130字
+            - wechat_mp（微信公众号）：800-2000字，至少3个小标题
+            - douyin（抖音）：口播文字不超过300字，必须包含[00:00]格式时间轴标记
+            - kuaishou（快手）：口播文字不超过300字，必须包含[00:00]格式时间轴标记
+            - toutiao（头条号）：500-1500字
+        - role: user
+          text: |
+            请根据审核报告修改以下文案中的问题部分：
+
+            **目标平台**：{{#start_node.platform#}}
+            **格式校验问题**：{{#code_format.issues#}}
+
+            **原始文案**：
+            ---
+            {{#llm_anti_ai.text#}}
+            ---
+
+            **审核报告**：
+            {{#llm_sensitive.text#}}
+
+            请直接输出修订后的完整文案，确保符合目标平台的字数和格式要求。
+        vision:
+          enabled: false
+          configs:
+            variable_selector: []
+        memory:
+          enabled: false
+          window:
+            enabled: false
+            size: 50
+        context:
+          enabled: false
+          variable_selector: []
+        structured_output:
+          enabled: false
+        retry_config:
+          enabled: false
+          max_retries: 1
+          retry_interval: 1000
+          exponential_backoff:
+            enabled: false
+            multiplier: 2
+            max_interval: 10000
+      height: 90
+      id: llm_revision
+      position:
+        x: 2462
+        y: 432
+      positionAbsolute:
+        x: 2462
+        y: 432
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: '修订后按平台规范格式化输出'
+        title: 修订后格式化输出
+        type: template-transform
+        template: |
+          {{ content }}
+
+          ---
+          📊 文案信息
+          - 平台：{% if platform == 'weibo' %}微博{% elif platform == 'wechat_mp' %}微信公众号{% elif platform == 'douyin' %}抖音{% elif platform == 'kuaishou' %}快手{% elif platform == 'toutiao' %}头条号{% else %}{{ platform }}{% endif %}
+          - 字数：约{{ char_count }}字
+          - 审核状态：⚠️ 已修订后通过
+
+          📅 发布建议
+          {% if platform == 'weibo' %}- 最佳发布时间：工作日 12:00-13:00 或 20:00-22:00
+          - 建议带话题标签：#交通安全# #{{ topic }}#
+          - 可配合1-2张信息图增强传播{% elif platform == 'wechat_mp' %}- 最佳发布时间：工作日 7:00-9:00 或 20:00-22:00
+          - 建议配置封面图和文章摘要
+          - 文末建议添加引导关注/转发的行动号召{% elif platform == 'douyin' %}- 最佳发布时间：12:00-14:00 或 18:00-22:00
+          - 建议BGM：根据风格选择轻快或紧张类配乐
+          - 封面突出主题文字，建议添加字幕{% elif platform == 'kuaishou' %}- 最佳发布时间：12:00-14:00 或 18:00-21:00
+          - 风格偏生活化接地气
+          - 建议BGM：流行或民间类配乐{% elif platform == 'toutiao' %}- 最佳发布时间：7:00-9:00 或 18:00-20:00
+          - 标题要信息量大，避免标题党
+          - 建议配3-5张相关图片{% endif %}
+        variables:
+        - value_selector:
+          - llm_revision
+          - text
+          variable: content
+        - value_selector:
+          - start_node
+          - platform
+          variable: platform
+        - value_selector:
+          - start_node
+          - topic
+          variable: topic
+        - value_selector:
+          - code_format
+          - char_count
+          variable: char_count
+      height: 90
+      id: template_revised
+      position:
+        x: 2766
+        y: 432
+      positionAbsolute:
+        x: 2766
+        y: 432
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: '合并通过/修订两个分支的格式化输出结果'
+        title: 合并结果
+        type: variable-aggregator
+        variables:
+        - - template_output
+          - output
+        - - template_revised
+          - output
+        output_type: string
+        advanced_settings: null
+      height: 90
+      id: agg_result
+      position:
+        x: 3070
+        y: 282
+      positionAbsolute:
+        x: 3070
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: ''
+        outputs:
+        - value_selector:
+          - agg_result
+          - output
+          value_type: string
+          variable: result
+        - value_selector:
+          - code_audit
+          - audit_status
+          value_type: string
+          variable: audit_status
+        - value_selector:
+          - llm_sensitive
+          - text
+          value_type: string
+          variable: audit_report
+        selected: false
+        title: 输出
+        type: end
+      height: 90
+      id: end_node
+      position:
+        x: 3374
+        y: 282
+      positionAbsolute:
+        x: 3374
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    viewport:
+      x: 0
+      y: 0
+      zoom: 0.5

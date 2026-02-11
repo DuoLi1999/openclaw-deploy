@@ -1,0 +1,281 @@
+app:
+  description: '政务场景敏感词检测，识别文案中的敏感内容并提供替换建议，输出结构化审核结果和is_passed判定'
+  icon: "\U0001F6E1"
+  icon_background: '#FFD7D5'
+  icon_type: emoji
+  mode: workflow
+  name: sensitive-word-checker
+  use_icon_as_answer_icon: false
+dependencies: []
+kind: app
+version: 0.3.1
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      enabled: false
+    opening_statement: ''
+    retriever_resource:
+      enabled: false
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: start
+        targetType: llm
+      id: start-to-llm
+      source: start_node
+      sourceHandle: source
+      target: llm_node
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: code
+      id: llm-to-code
+      source: llm_node
+      sourceHandle: source
+      target: code_parse
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: end
+      id: code-to-end
+      source: code_parse
+      sourceHandle: source
+      target: end_node
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        desc: '输入待检测的文案内容'
+        selected: false
+        title: 开始
+        type: start
+        variables:
+        - label: 待检测文案
+          max_length: 5000
+          options: []
+          required: true
+          type: paragraph
+          variable: content
+      height: 90
+      id: start_node
+      position:
+        x: 30
+        y: 227
+      positionAbsolute:
+        x: 30
+        y: 227
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: '使用LLM检测文案中的敏感词，输出JSON结构化结果'
+        title: 敏感词检测
+        type: llm
+        model:
+          provider: deepseek
+          name: deepseek-chat
+          mode: chat
+          completion_params:
+            temperature: 0.05
+        prompt_template:
+        - role: system
+          text: |
+            你是一名政务内容审核专家，负责检测交警宣传文案中的敏感内容。你需要从以下几个维度进行检测：
+
+            ## 检测维度
+
+            1. **政治敏感**：涉及政治人物、政治事件、意识形态等不当表述
+            2. **法律风险**：未审先判的表述、侵犯隐私（如泄露当事人真实姓名/车牌）、歧视性用语
+            3. **事实准确**：错误的法规引用、不实数据、夸大其词的表述
+            4. **用语不当**：不符合政务宣传口径的用语、过于口语化或粗俗的表达、可能引发争议的措辞
+            5. **暴力血腥**：过度描述事故伤亡细节、可能引发不适的画面描写
+
+            ## 交通专业术语准确性检查
+
+            额外检查以下交通领域专业术语的准确性：
+            - 法规名称是否正确（如《道路交通安全法》不可简写为《交通法》，全称为《中华人民共和国道路交通安全法》）
+            - 处罚标准是否与现行法规一致（罚款金额、记分分值须与最新规定吻合）
+            - 交通术语是否规范（如"机动车"不可随意写为"汽车"，"非机动车道"不可写为"自行车道"）
+            - 执法程序描述是否准确（如扣留车辆的法定条件、血液酒精含量标准）
+            - 数据引用是否标注来源（统计数据需注明出处和时间范围）
+
+            ## 输出格式
+
+            请严格按以下 JSON 格式输出检测结果（不要添加任何额外文字说明，只输出纯JSON）：
+
+            ```json
+            {
+              "has_sensitive": true,
+              "summary": "整体评估（一句话）",
+              "items": [
+                {
+                  "word": "敏感词或敏感片段",
+                  "position": "所在段落或上下文",
+                  "level": "error/warning/info",
+                  "category": "检测维度（政治敏感/法律风险/事实准确/用语不当/暴力血腥/术语规范）",
+                  "reason": "判定为敏感的原因",
+                  "suggestion": "建议替换为的内容"
+                }
+              ]
+            }
+            ```
+
+            ## 严重级别说明
+
+            - **error**：必须修改，存在明显违规风险
+            - **warning**：建议修改，可能引发争议或不够规范
+            - **info**：可选修改，优化建议
+
+            如果文案没有任何问题，返回：
+            ```json
+            {"has_sensitive": false, "summary": "文案内容合规，未发现敏感问题", "items": []}
+            ```
+        - role: user
+          text: |
+            请检测以下交警宣传文案中的敏感内容：
+
+            ---
+            {{#start_node.content#}}
+            ---
+        vision:
+          enabled: false
+          configs:
+            variable_selector: []
+        memory:
+          enabled: false
+          window:
+            enabled: false
+            size: 50
+        context:
+          enabled: false
+          variable_selector: []
+        structured_output:
+          enabled: false
+        retry_config:
+          enabled: false
+          max_retries: 1
+          retry_interval: 1000
+          exponential_backoff:
+            enabled: false
+            multiplier: 2
+            max_interval: 10000
+      height: 90
+      id: llm_node
+      position:
+        x: 334
+        y: 227
+      positionAbsolute:
+        x: 334
+        y: 227
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: '解析LLM输出的JSON，提取is_passed布尔判定'
+        title: 审核判定
+        type: code
+        code_language: python3
+        code: |
+          def main(result: str) -> dict:
+              import json
+
+              try:
+                  text = result.strip()
+                  if '```json' in text:
+                      text = text.split('```json')[1].split('```')[0].strip()
+                  elif '```' in text:
+                      text = text.split('```')[1].split('```')[0].strip()
+
+                  data = json.loads(text)
+                  has_sensitive = data.get("has_sensitive", False)
+                  items = data.get("items", [])
+                  error_count = sum(1 for item in items if item.get("level") == "error")
+                  warning_count = sum(1 for item in items if item.get("level") == "warning")
+                  is_passed = "true" if (not has_sensitive) or (error_count == 0 and warning_count <= 2) else "false"
+              except Exception:
+                  is_passed = "true"
+
+              return {
+                  "is_passed": is_passed
+              }
+        variables:
+        - value_selector:
+          - llm_node
+          - text
+          variable: result
+        outputs:
+          is_passed:
+            type: string
+            children: null
+      height: 90
+      id: code_parse
+      position:
+        x: 638
+        y: 227
+      positionAbsolute:
+        x: 638
+        y: 227
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: ''
+        outputs:
+        - value_selector:
+          - llm_node
+          - text
+          value_type: string
+          variable: result
+        - value_selector:
+          - code_parse
+          - is_passed
+          value_type: string
+          variable: is_passed
+        selected: false
+        title: 输出
+        type: end
+      height: 90
+      id: end_node
+      position:
+        x: 942
+        y: 227
+      positionAbsolute:
+        x: 942
+        y: 227
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    viewport:
+      x: 0
+      y: 0
+      zoom: 0.7

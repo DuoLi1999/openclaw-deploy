@@ -1,0 +1,479 @@
+app:
+  description: '交警宣传内容策略规划，基于内容支柱、话题聚类和优先级评分框架，输出结构化策略JSON和发布排期'
+  icon: "\U0001F4CB"
+  icon_background: '#D5E8FF'
+  icon_type: emoji
+  mode: workflow
+  name: content-strategy-planner
+  use_icon_as_answer_icon: false
+dependencies: []
+kind: app
+version: 0.3.1
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      enabled: false
+    opening_statement: ''
+    retriever_resource:
+      enabled: false
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: start
+        targetType: llm
+      id: start-to-llm-strategy
+      source: start_node
+      sourceHandle: source
+      target: llm_strategy
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: code
+      id: llm-strategy-to-code
+      source: llm_strategy
+      sourceHandle: source
+      target: code_extract
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: llm
+      id: code-to-llm-schedule
+      source: code_extract
+      sourceHandle: source
+      target: llm_schedule
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: end
+      id: llm-schedule-to-end
+      source: llm_schedule
+      sourceHandle: source
+      target: end_node
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        desc: '输入宣传策划的背景信息和需求'
+        selected: false
+        title: 开始
+        type: start
+        variables:
+        - label: 策划目标
+          max_length: 500
+          options: []
+          required: true
+          type: paragraph
+          variable: goal
+        - label: 目标受众
+          max_length: 500
+          options: []
+          required: true
+          type: paragraph
+          variable: audience
+        - label: 覆盖平台
+          max_length: null
+          options:
+          - 全平台
+          - 微博+微信
+          - 短视频平台
+          - 微信公众号为主
+          required: true
+          type: select
+          variable: platforms
+        - label: 时间周期
+          max_length: null
+          options:
+          - 单周计划
+          - 月度计划
+          - 季度计划
+          - 专题活动
+          required: true
+          type: select
+          variable: time_range
+        - label: 补充背景
+          max_length: 2000
+          options: []
+          required: false
+          type: paragraph
+          variable: context
+      height: 90
+      id: start_node
+      position:
+        x: 30
+        y: 227
+      positionAbsolute:
+        x: 30
+        y: 227
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: '基于内容策略框架生成宣传内容规划方案'
+        title: 策略规划
+        type: llm
+        model:
+          provider: deepseek
+          name: deepseek-chat
+          mode: chat
+          completion_params:
+            temperature: 0.7
+        prompt_template:
+        - role: system
+          text: |
+            你是一名资深的政务新媒体内容策略师，专注于交警宣传领域。你的目标是帮助交警宣传部门规划系统化的内容策略，让宣传内容既能触达目标受众（可搜索），又能引发传播（可分享）。
+
+            ## 核心方法论
+
+            ### 可搜索 vs 可分享
+
+            每一篇内容必须满足以下至少一个特性，优先考虑可搜索性：
+
+            **可搜索内容**（捕获已有需求）：
+            - 针对具体的搜索关键词或问题
+            - 精准匹配搜索意图
+            - 标题清晰匹配搜索查询
+            - 用结构化标题覆盖搜索模式
+            - 提供全面覆盖，不留未解答的问题
+
+            **可分享内容**（创造新需求）：
+            - 以新颖洞察、原创数据或反常识观点开头
+            - 讲述让人有情感共鸣的故事
+            - 创造人们想转发以显得有用或有见识的内容
+            - 连接当前热点或新兴话题
+
+            ### 内容类型适配交警宣传
+
+            **场景化内容**（Use-Case）：
+            - [人群] + [场景]，如："老年人出行安全指南"、"新手司机高速注意事项"、"家长接送孩子学校周边安全"
+
+            **主题聚合**（Hub and Spoke）：
+            - 核心主题页 + 子话题系列，如：
+              - 核心：酒驾专题
+              - 子话题：酒驾处罚标准、醉驾与饮酒驾的区别、酒后代驾指南、真实案例
+
+            **警示教育系列**：
+            - 结构：事故经过 → 原因分析 → 法规解读 → 安全提示
+            - 用真实案例（脱敏处理）增强说服力
+
+            **知识科普系列**：
+            - 新规解读、驾驶技巧、车辆维护安全、应急处置方法
+
+            **互动传播内容**：
+            - 交通安全知识问答、违法行为找茬、安全驾驶小测试
+
+            ### 内容支柱体系
+
+            为交警宣传规划 3-5 个内容支柱，每个支柱下衍生话题集群：
+
+            支柱选择标准：
+            1. **职责相关**：与交警执法和宣传职责直接相关
+            2. **受众关切**：群众真正关心的交通安全问题
+            3. **传播潜力**：有搜索量或社交传播价值
+            4. **时效结合**：能结合季节、节假日、新政策产出内容
+
+            ### 内容优先级评分
+
+            对每个内容想法按四个维度评分（1-10分）：
+
+            1. **公众影响力（40%）**：涉及多少人？安全风险多大？群众关注度如何？
+            2. **宣传契合度（30%）**：是否符合当前宣传重点？能否展现交警正面形象？
+            3. **传播潜力（20%）**：是否有搜索量？是否容易引发转发？是否能蹭到热点？
+            4. **制作难度（10%）**：素材是否容易获取？是否需要特殊拍摄？时效性要求？
+
+            ### 受众阶段映射
+
+            **认知阶段**（不了解规则）：
+            - 关键词模式："什么是XX"、"XX怎么处罚"、"XX扣几分"
+            - 内容：法规科普、新规解读
+
+            **行为阶段**（知道但做不到）：
+            - 关键词模式："如何正确XX"、"XX技巧"、"XX注意事项"
+            - 内容：操作指南、驾驶技巧
+
+            **情感阶段**（需要被触动）：
+            - 关键词模式：案例、事故、后果
+            - 内容：警示教育、真实故事
+
+            **传播阶段**（愿意分享给他人）：
+            - 关键词模式：提醒、转发、家人
+            - 内容：提醒类海报、节日安全提示、给XX的一封信
+
+            ## 输出格式要求
+
+            请严格按以下结构输出：
+
+            ### 一、内容支柱（3-5个）
+            每个支柱包含：
+            - 支柱名称
+            - 选择理由
+            - 下属话题集群（每个至少3个子话题）
+            - 与平台的适配建议
+
+            ### 二、优先内容排期
+            按优先级排序的内容列表，每条包含：
+            | 序号 | 内容标题 | 类型 | 可搜索/可分享 | 目标平台 | 受众阶段 | 优先级评分 |
+
+            ### 三、话题集群地图
+            用结构化方式展示内容之间的关联关系
+
+            ### 四、执行建议
+            - 各平台发布频率建议
+            - 内容复用策略（一个主题如何适配多平台）
+            - 时效性内容的提前准备建议
+        - role: user
+          text: |
+            请为我规划一份交警宣传内容策略方案：
+
+            **策划目标**：{{#start_node.goal#}}
+            **目标受众**：{{#start_node.audience#}}
+            **覆盖平台**：{{#start_node.platforms#}}
+            **时间周期**：{{#start_node.time_range#}}
+            **补充背景**：{{#start_node.context#}}
+        vision:
+          enabled: false
+          configs:
+            variable_selector: []
+        memory:
+          enabled: false
+          window:
+            enabled: false
+            size: 50
+        context:
+          enabled: false
+          variable_selector: []
+        structured_output:
+          enabled: false
+        retry_config:
+          enabled: false
+          max_retries: 1
+          retry_interval: 1000
+          exponential_backoff:
+            enabled: false
+            multiplier: 2
+            max_interval: 10000
+      height: 90
+      id: llm_strategy
+      position:
+        x: 334
+        y: 227
+      positionAbsolute:
+        x: 334
+        y: 227
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: '从策略规划文本中提取结构化JSON数据'
+        title: 结构化提取
+        type: code
+        code_language: python3
+        code: |
+          def main(strategy_text: str) -> dict:
+              import json
+              import re
+
+              pillars = []
+              schedule_items = []
+
+              lines = strategy_text.split('\n')
+              current_pillar = None
+
+              for line in lines:
+                  line_stripped = line.strip()
+                  pillar_match = re.match(r'(?:[-*]\s*)?(?:支柱[一二三四五六七八九十\d]+|[1-5])[.、：:\s]+(.+)', line_stripped)
+                  if pillar_match and '支柱' in line_stripped[:10]:
+                      current_pillar = pillar_match.group(1).strip()
+                      pillars.append(current_pillar)
+
+                  row_match = re.match(r'\|\s*(\d+)\s*\|(.+)', line_stripped)
+                  if row_match:
+                      cells = [c.strip() for c in row_match.group(0).split('|') if c.strip()]
+                      if len(cells) >= 4 and cells[0].isdigit():
+                          schedule_items.append({
+                              "seq": cells[0],
+                              "title": cells[1] if len(cells) > 1 else "",
+                              "type": cells[2] if len(cells) > 2 else "",
+                              "platform": cells[4] if len(cells) > 4 else "",
+                              "priority": cells[6] if len(cells) > 6 else ""
+                          })
+
+              strategy_json = json.dumps({
+                  "pillars": pillars,
+                  "schedule_count": len(schedule_items),
+                  "schedule": schedule_items[:20],
+                  "raw_strategy": strategy_text
+              }, ensure_ascii=False)
+
+              return {
+                  "strategy_json": strategy_json
+              }
+        variables:
+        - value_selector:
+          - llm_strategy
+          - text
+          variable: strategy_text
+        outputs:
+          strategy_json:
+            type: string
+            children: null
+      height: 90
+      id: code_extract
+      position:
+        x: 638
+        y: 227
+      positionAbsolute:
+        x: 638
+        y: 227
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: '基于策略规划结果生成具体的发布排期表'
+        title: 发布排期生成
+        type: llm
+        model:
+          provider: deepseek
+          name: deepseek-chat
+          mode: chat
+          completion_params:
+            temperature: 0.5
+        prompt_template:
+        - role: system
+          text: |
+            你是一名政务新媒体运营排期专家。根据已制定的内容策略，生成详细的发布排期计划。
+
+            ## 排期规则
+
+            1. 每条内容标注：发布日期、时间段、平台、内容标题、内容类型、负责准备项
+            2. 发布时间建议：
+               - 微博：工作日 12:00-13:00 或 20:00-22:00
+               - 微信公众号：工作日 7:00-9:00 或 20:00-22:00
+               - 抖音/快手：12:00-14:00 或 18:00-22:00
+               - 头条号：7:00-9:00 或 18:00-20:00
+            3. 同一主题的多平台内容错开发布，间隔4-8小时
+            4. 节假日和特殊时间节点（开学季、春运等）提前3-5天准备
+            5. 保持各平台均匀的发布频率
+
+            ## 输出格式
+
+            按日期排序，使用表格格式：
+            | 日期 | 时间 | 平台 | 内容标题 | 类型 | 准备项 |
+
+            最后附上总结：
+            - 本期总计发布数量
+            - 各平台发布分布
+            - 重点关注的时间节点
+        - role: user
+          text: |
+            请基于以下内容策略，生成具体的发布排期计划：
+
+            **时间周期**：{{#start_node.time_range#}}
+            **覆盖平台**：{{#start_node.platforms#}}
+
+            **策略规划方案**：
+            {{#llm_strategy.text#}}
+        vision:
+          enabled: false
+          configs:
+            variable_selector: []
+        memory:
+          enabled: false
+          window:
+            enabled: false
+            size: 50
+        context:
+          enabled: false
+          variable_selector: []
+        structured_output:
+          enabled: false
+        retry_config:
+          enabled: false
+          max_retries: 1
+          retry_interval: 1000
+          exponential_backoff:
+            enabled: false
+            multiplier: 2
+            max_interval: 10000
+      height: 90
+      id: llm_schedule
+      position:
+        x: 942
+        y: 227
+      positionAbsolute:
+        x: 942
+        y: 227
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: ''
+        outputs:
+        - value_selector:
+          - llm_strategy
+          - text
+          value_type: string
+          variable: result
+        - value_selector:
+          - code_extract
+          - strategy_json
+          value_type: string
+          variable: strategy_json
+        - value_selector:
+          - llm_schedule
+          - text
+          value_type: string
+          variable: schedule
+        selected: false
+        title: 输出
+        type: end
+      height: 90
+      id: end_node
+      position:
+        x: 1246
+        y: 227
+      positionAbsolute:
+        x: 1246
+        y: 227
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    viewport:
+      x: 0
+      y: 0
+      zoom: 0.7
