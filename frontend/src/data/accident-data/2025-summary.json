@@ -1,0 +1,147 @@
+{
+  "period": "2025年度",
+  "generatedDate": "2026-01-15",
+  "region": "XX市",
+  "overview": {
+    "totalAccidents": 2856,
+    "totalFatalities": 128,
+    "totalInjuries": 3420,
+    "totalPropertyDamage": 18500000,
+    "yoyAccidentChange": -0.08,
+    "yoyFatalityChange": -0.12
+  },
+  "monthlyTrend": [
+    {"month": 1, "accidents": 285, "fatalities": 14, "injuries": 340},
+    {"month": 2, "accidents": 210, "fatalities": 8, "injuries": 250},
+    {"month": 3, "accidents": 225, "fatalities": 10, "injuries": 270},
+    {"month": 4, "accidents": 230, "fatalities": 9, "injuries": 275},
+    {"month": 5, "accidents": 240, "fatalities": 11, "injuries": 288},
+    {"month": 6, "accidents": 260, "fatalities": 12, "injuries": 310},
+    {"month": 7, "accidents": 275, "fatalities": 13, "injuries": 330},
+    {"month": 8, "accidents": 250, "fatalities": 11, "injuries": 300},
+    {"month": 9, "accidents": 235, "fatalities": 10, "injuries": 282},
+    {"month": 10, "accidents": 255, "fatalities": 11, "injuries": 305},
+    {"month": 11, "accidents": 230, "fatalities": 9, "injuries": 275},
+    {"month": 12, "accidents": 261, "fatalities": 10, "injuries": 295}
+  ],
+  "byAccidentType": [
+    {"type": "追尾碰撞", "count": 856, "percentage": 0.30, "fatalities": 25},
+    {"type": "侧面碰撞", "count": 571, "percentage": 0.20, "fatalities": 30},
+    {"type": "正面碰撞", "count": 342, "percentage": 0.12, "fatalities": 22},
+    {"type": "单车事故", "count": 285, "percentage": 0.10, "fatalities": 18},
+    {"type": "刮擦", "count": 428, "percentage": 0.15, "fatalities": 2},
+    {"type": "碾压行人/非机动车", "count": 228, "percentage": 0.08, "fatalities": 28},
+    {"type": "其他", "count": 146, "percentage": 0.05, "fatalities": 3}
+  ],
+  "byViolationType": [
+    {"type": "超速行驶", "count": 542, "percentage": 0.19},
+    {"type": "酒驾/醉驾", "count": 228, "percentage": 0.08, "fatalities": 35},
+    {"type": "疲劳驾驶", "count": 171, "percentage": 0.06, "fatalities": 20},
+    {"type": "未按规定让行", "count": 485, "percentage": 0.17},
+    {"type": "违法变道", "count": 342, "percentage": 0.12},
+    {"type": "闯红灯", "count": 200, "percentage": 0.07},
+    {"type": "逆行", "count": 114, "percentage": 0.04},
+    {"type": "其他", "count": 774, "percentage": 0.27}
+  ],
+  "highRiskAreas": [
+    {
+      "location": "G15高速K100-K150段",
+      "type": "高速公路",
+      "accidents": 85,
+      "fatalities": 8,
+      "mainCause": "超速、疲劳驾驶",
+      "riskLevel": "高",
+      "seasonalPattern": "冬季雨雾天气高发"
+    },
+    {
+      "location": "人民路与解放路交叉口",
+      "type": "城区路口",
+      "accidents": 62,
+      "fatalities": 3,
+      "mainCause": "闯红灯、未按规定让行",
+      "riskLevel": "高",
+      "seasonalPattern": "早晚高峰高发"
+    },
+    {
+      "location": "S204省道盘山段",
+      "type": "山区公路",
+      "accidents": 48,
+      "fatalities": 6,
+      "mainCause": "超速、弯道越线",
+      "riskLevel": "高",
+      "seasonalPattern": "冬季冰雪天气高发"
+    },
+    {
+      "location": "白石镇乡道Y003",
+      "type": "农村道路",
+      "accidents": 38,
+      "fatalities": 5,
+      "mainCause": "摩托车违法、无证驾驶",
+      "riskLevel": "中",
+      "seasonalPattern": "节假日期间高发"
+    },
+    {
+      "location": "商业步行街周边",
+      "type": "城区商业区",
+      "accidents": 55,
+      "fatalities": 1,
+      "mainCause": "外卖骑手违法、非机动车逆行",
+      "riskLevel": "中",
+      "seasonalPattern": "午间及晚间高发"
+    }
+  ],
+  "highRiskGroups": [
+    {
+      "group": "外卖/快递骑手",
+      "involvedAccidents": 180,
+      "percentage": 0.063,
+      "mainViolation": "逆行、闯红灯、超速",
+      "riskLevel": "高"
+    },
+    {
+      "group": "老年人（60岁以上）",
+      "involvedAccidents": 220,
+      "percentage": 0.077,
+      "mainViolation": "横穿道路、不走斑马线",
+      "riskLevel": "高"
+    },
+    {
+      "group": "货车/重型车辆驾驶人",
+      "involvedAccidents": 165,
+      "percentage": 0.058,
+      "mainViolation": "超速、疲劳驾驶、超载",
+      "riskLevel": "高"
+    },
+    {
+      "group": "学生（18岁以下）",
+      "involvedAccidents": 95,
+      "percentage": 0.033,
+      "mainViolation": "在道路上嬉戏、横穿道路",
+      "riskLevel": "中"
+    },
+    {
+      "group": "农村地区驾驶人",
+      "involvedAccidents": 310,
+      "percentage": 0.109,
+      "mainViolation": "无证驾驶、酒后驾驶、不戴头盔",
+      "riskLevel": "高"
+    }
+  ],
+  "weatherRelated": [
+    {"weather": "晴天", "accidents": 1570, "percentage": 0.55},
+    {"weather": "雨天", "accidents": 600, "percentage": 0.21},
+    {"weather": "雾天", "accidents": 285, "percentage": 0.10},
+    {"weather": "冰雪", "accidents": 228, "percentage": 0.08},
+    {"weather": "其他", "accidents": 173, "percentage": 0.06}
+  ],
+  "timeDistribution": [
+    {"period": "00:00-06:00", "accidents": 228, "fatalities": 22},
+    {"period": "06:00-08:00", "accidents": 342, "fatalities": 15},
+    {"period": "08:00-11:00", "accidents": 400, "fatalities": 12},
+    {"period": "11:00-14:00", "accidents": 456, "fatalities": 18},
+    {"period": "14:00-17:00", "accidents": 485, "fatalities": 20},
+    {"period": "17:00-19:00", "accidents": 514, "fatalities": 22},
+    {"period": "19:00-22:00", "accidents": 342, "fatalities": 15},
+    {"period": "22:00-24:00", "accidents": 89, "fatalities": 4}
+  ]
+}

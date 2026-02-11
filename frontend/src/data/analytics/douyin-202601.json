@@ -1,0 +1,85 @@
+{
+  "platform": "douyin",
+  "period": "2026-01",
+  "summary": {
+    "totalPosts": 12,
+    "totalViews": 1260000,
+    "totalLikes": 85000,
+    "totalShares": 12500,
+    "totalComments": 6800,
+    "newFollowers": 4200,
+    "avgViewsPerPost": 105000,
+    "avgInteractionRate": 0.083,
+    "avgCompletionRate": 0.62
+  },
+  "weeklyTrend": [
+    { "week": 1, "posts": 3, "views": 320000, "likes": 22000, "shares": 3200, "completionRate": 0.61 },
+    { "week": 2, "posts": 3, "views": 295000, "likes": 19500, "shares": 2900, "completionRate": 0.59 },
+    { "week": 3, "posts": 3, "views": 340000, "likes": 23500, "shares": 3500, "completionRate": 0.65 },
+    { "week": 4, "posts": 3, "views": 305000, "likes": 20000, "shares": 2900, "completionRate": 0.63 }
+  ],
+  "topContent": [
+    {
+      "title": "春运路上的[逆行者]：交警连续执勤18小时实拍",
+      "publishDate": "2026-01-12",
+      "views": 198000,
+      "likes": 15200,
+      "shares": 2800,
+      "comments": 1350,
+      "interactionRate": 0.098,
+      "completionRate": 0.72,
+      "topic": "交警正能量"
+    },
+    {
+      "title": "醉驾现场：司机花式吹气测试名场面合集",
+      "publishDate": "2026-01-05",
+      "views": 175000,
+      "likes": 13800,
+      "shares": 2200,
+      "comments": 1180,
+      "interactionRate": 0.098,
+      "completionRate": 0.68,
+      "topic": "酒驾警示"
+    },
+    {
+      "title": "冰雪路面刹车距离实测！看完你还敢开快车吗？",
+      "publishDate": "2026-01-18",
+      "views": 142000,
+      "likes": 10500,
+      "shares": 1900,
+      "comments": 920,
+      "interactionRate": 0.094,
+      "completionRate": 0.70,
+      "topic": "恶劣天气"
+    },
+    {
+      "title": "电动车[鬼探头]有多危险？监控画面还原真相",
+      "publishDate": "2026-01-23",
+      "views": 126000,
+      "likes": 9200,
+      "shares": 1650,
+      "comments": 780,
+      "interactionRate": 0.092,
+      "completionRate": 0.66,
+      "topic": "电动车安全"
+    },
+    {
+      "title": "高速公路应急车道违法停车后果有多严重？",
+      "publishDate": "2026-01-28",
+      "views": 108000,
+      "likes": 7800,
+      "shares": 1350,
+      "comments": 650,
+      "interactionRate": 0.091,
+      "completionRate": 0.58,
+      "topic": "春运安全"
+    }
+  ],
+  "topicAnalysis": [
+    { "topic": "春运安全", "posts": 3, "avgViews": 95000, "avgInteractionRate": 0.078, "avgCompletionRate": 0.60 },
+    { "topic": "酒驾警示", "posts": 3, "avgViews": 118000, "avgInteractionRate": 0.092, "avgCompletionRate": 0.67 },
+    { "topic": "恶劣天气", "posts": 2, "avgViews": 105000, "avgInteractionRate": 0.088, "avgCompletionRate": 0.68 },
+    { "topic": "电动车安全", "posts": 2, "avgViews": 98000, "avgInteractionRate": 0.085, "avgCompletionRate": 0.63 },
+    { "topic": "交警正能量", "posts": 2, "avgViews": 155000, "avgInteractionRate": 0.096, "avgCompletionRate": 0.71 }
+  ]
+}

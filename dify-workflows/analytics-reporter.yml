@@ -1,0 +1,399 @@
+app:
+  description: '多平台宣传效果分析，接收三平台数据JSON，聚合指标后生成AI分析报告'
+  icon: "\U0001F4CA"
+  icon_background: '#E4FBCC'
+  icon_type: emoji
+  mode: workflow
+  name: analytics-reporter
+  use_icon_as_answer_icon: false
+dependencies: []
+kind: app
+version: 0.3.1
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      enabled: false
+    opening_statement: ''
+    retriever_resource:
+      enabled: false
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: start
+        targetType: code
+      id: start-to-code
+      source: start_node
+      sourceHandle: source
+      target: code_aggregate
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: llm
+      id: code-to-llm
+      source: code_aggregate
+      sourceHandle: source
+      target: llm_report
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: end
+      id: llm-to-end
+      source: llm_report
+      sourceHandle: source
+      target: end_node
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        desc: '接收三平台数据和分析参数'
+        selected: false
+        title: 开始
+        type: start
+        variables:
+        - label: 微信公众号数据
+          max_length: 10000
+          options: []
+          required: true
+          type: paragraph
+          variable: wechat_data
+        - label: 微博数据
+          max_length: 10000
+          options: []
+          required: true
+          type: paragraph
+          variable: weibo_data
+        - label: 抖音数据
+          max_length: 10000
+          options: []
+          required: true
+          type: paragraph
+          variable: douyin_data
+        - label: 分析月份
+          max_length: 20
+          options: []
+          required: true
+          type: text-input
+          variable: analysis_month
+        - label: 分析重点
+          max_length: null
+          options:
+          - overall
+          - content
+          - audience
+          - trend
+          required: true
+          type: select
+          variable: focus_area
+      height: 90
+      id: start_node
+      position:
+        x: 30
+        y: 227
+      positionAbsolute:
+        x: 30
+        y: 227
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: '解析三平台JSON数据，聚合核心指标'
+        title: 数据聚合
+        type: code
+        code_language: python3
+        code: |
+          def main(wechat_data: str, weibo_data: str, douyin_data: str, analysis_month: str) -> dict:
+              import json
+
+              def safe_parse(data_str):
+                  try:
+                      return json.loads(data_str)
+                  except Exception:
+                      return {}
+
+              wechat = safe_parse(wechat_data)
+              weibo = safe_parse(weibo_data)
+              douyin = safe_parse(douyin_data)
+
+              ws = wechat.get("summary", {})
+              wbs = weibo.get("summary", {})
+              ds = douyin.get("summary", {})
+
+              total_posts = ws.get("totalPosts", 0) + wbs.get("totalPosts", 0) + ds.get("totalPosts", 0)
+              total_reads = ws.get("totalReads", 0) + wbs.get("totalReads", 0) + ds.get("totalViews", 0)
+              total_likes = ws.get("totalLikes", 0) + wbs.get("totalLikes", 0) + ds.get("totalLikes", 0)
+              total_shares = ws.get("totalShares", 0) + wbs.get("totalShares", 0) + ds.get("totalShares", 0)
+              total_comments = ws.get("totalComments", 0) + wbs.get("totalComments", 0) + ds.get("totalComments", 0)
+              total_followers = ws.get("newFollowers", 0) + wbs.get("newFollowers", 0) + ds.get("newFollowers", 0)
+
+              # Top content across platforms
+              all_top = []
+              for item in wechat.get("topContent", []):
+                  all_top.append({"title": item["title"], "platform": "微信", "metric": item.get("reads", 0), "topic": item.get("topic", "")})
+              for item in weibo.get("topContent", []):
+                  all_top.append({"title": item["title"], "platform": "微博", "metric": item.get("reads", 0), "topic": item.get("topic", "")})
+              for item in douyin.get("topContent", []):
+                  all_top.append({"title": item["title"], "platform": "抖音", "metric": item.get("views", 0), "topic": item.get("topic", "")})
+
+              all_top.sort(key=lambda x: x["metric"], reverse=True)
+              top5 = all_top[:5]
+
+              # Topic performance
+              topic_map = {}
+              for platform_data in [wechat, weibo, douyin]:
+                  for ta in platform_data.get("topicAnalysis", []):
+                      topic = ta.get("topic", "")
+                      if topic not in topic_map:
+                          topic_map[topic] = {"posts": 0, "avg_interaction": []}
+                      topic_map[topic]["posts"] += ta.get("posts", 0)
+                      topic_map[topic]["avg_interaction"].append(ta.get("avgInteractionRate", 0))
+
+              topic_summary = []
+              for topic, data in topic_map.items():
+                  avg_rate = sum(data["avg_interaction"]) / len(data["avg_interaction"]) if data["avg_interaction"] else 0
+                  topic_summary.append({"topic": topic, "total_posts": data["posts"], "avg_interaction_rate": round(avg_rate, 4)})
+
+              topic_summary.sort(key=lambda x: x["avg_interaction_rate"], reverse=True)
+
+              summary_json = json.dumps({
+                  "month": analysis_month,
+                  "totals": {
+                      "posts": total_posts,
+                      "reads_views": total_reads,
+                      "likes": total_likes,
+                      "shares": total_shares,
+                      "comments": total_comments,
+                      "new_followers": total_followers
+                  },
+                  "platform_breakdown": {
+                      "wechat": {"posts": ws.get("totalPosts", 0), "reads": ws.get("totalReads", 0), "interaction_rate": ws.get("avgInteractionRate", 0)},
+                      "weibo": {"posts": wbs.get("totalPosts", 0), "reads": wbs.get("totalReads", 0), "interaction_rate": wbs.get("avgInteractionRate", 0)},
+                      "douyin": {"posts": ds.get("totalPosts", 0), "views": ds.get("totalViews", 0), "interaction_rate": ds.get("avgInteractionRate", 0)}
+                  },
+                  "top5_content": top5,
+                  "topic_performance": topic_summary
+              }, ensure_ascii=False)
+
+              # Build readable data brief for LLM
+              data_brief = f"""## 数据概览（{analysis_month}）
+
+          ### 总量指标
+          - 发布总数：{total_posts} 篇
+          - 阅读/播放总量：{total_reads:,}
+          - 点赞总量：{total_likes:,}
+          - 转发总量：{total_shares:,}
+          - 评论总量：{total_comments:,}
+          - 新增粉丝：{total_followers:,}
+
+          ### 平台数据
+          - 微信公众号：{ws.get('totalPosts',0)}篇，阅读{ws.get('totalReads',0):,}，互动率{ws.get('avgInteractionRate',0)*100:.1f}%
+          - 微博：{wbs.get('totalPosts',0)}篇，阅读{wbs.get('totalReads',0):,}，互动率{wbs.get('avgInteractionRate',0)*100:.1f}%
+          - 抖音：{ds.get('totalPosts',0)}篇，播放{ds.get('totalViews',0):,}，互动率{ds.get('avgInteractionRate',0)*100:.1f}%
+
+          ### 热门内容TOP5
+          """
+              for i, item in enumerate(top5, 1):
+                  data_brief += f"{i}. 【{item['platform']}】{item['title']}（{item['metric']:,}）— {item['topic']}\n"
+
+              data_brief += "\n### 话题表现\n"
+              for ts in topic_summary:
+                  data_brief += f"- {ts['topic']}：{ts['total_posts']}篇，平均互动率{ts['avg_interaction_rate']*100:.1f}%\n"
+
+              return {
+                  "summary_json": summary_json,
+                  "data_brief": data_brief
+              }
+        variables:
+        - value_selector:
+          - start_node
+          - wechat_data
+          variable: wechat_data
+        - value_selector:
+          - start_node
+          - weibo_data
+          variable: weibo_data
+        - value_selector:
+          - start_node
+          - douyin_data
+          variable: douyin_data
+        - value_selector:
+          - start_node
+          - analysis_month
+          variable: analysis_month
+        outputs:
+          summary_json:
+            type: string
+            children: null
+          data_brief:
+            type: string
+            children: null
+      height: 90
+      id: code_aggregate
+      position:
+        x: 334
+        y: 227
+      positionAbsolute:
+        x: 334
+        y: 227
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: '基于聚合数据生成Markdown分析报告'
+        title: 分析报告生成
+        type: llm
+        model:
+          provider: deepseek
+          name: deepseek-chat
+          mode: chat
+          completion_params:
+            temperature: 0.5
+        prompt_template:
+        - role: system
+          text: |
+            你是一名资深的政务新媒体数据分析师，专注于交警宣传效果评估。
+
+            ## 报告结构
+
+            根据分析重点（focus_area）调整侧重，但所有报告都必须包含以下核心结构：
+
+            ### 一、本期概览
+            - 核心数据汇总（对比上期如有数据）
+            - 本期亮点（最大突破/最佳表现）
+            - 待改进项
+
+            ### 二、平台分析
+            - 各平台数据横向对比
+            - 各平台优势内容类型
+            - 各平台互动率分析
+
+            ### 三、内容分析
+            - 热门内容复盘（为什么这些内容表现好？）
+            - 话题表现排名及原因分析
+            - 内容类型效果对比
+
+            ### 四、趋势洞察
+            - 周度趋势变化（如有数据）
+            - 受众互动模式变化
+            - 值得关注的新兴趋势
+
+            ### 五、优化建议
+            - 内容策略建议（下期重点话题方向）
+            - 平台运营建议（各平台差异化策略）
+            - 发布时间建议
+            - 互动提升策略
+
+            ## 分析重点说明
+
+            - **overall**：均衡分析所有维度
+            - **content**：重点分析内容表现，深入复盘热门内容成功因素
+            - **audience**：重点分析受众互动行为，粉丝增长，评论情感
+            - **trend**：重点分析趋势变化，预测下期走向
+
+            ## 写作要求
+
+            1. 用数据说话，每个结论都要有数据支撑
+            2. 避免空洞的套话，给出具体可执行的建议
+            3. 横向对比不同平台时要考虑平台特性差异
+            4. 使用Markdown格式，表格展示对比数据
+            5. 报告总长控制在1500-2500字
+        - role: user
+          text: |
+            请基于以下数据生成{{#start_node.analysis_month#}}的宣传效果分析报告。
+
+            **分析重点**：{{#start_node.focus_area#}}
+
+            {{#code_aggregate.data_brief#}}
+        vision:
+          enabled: false
+          configs:
+            variable_selector: []
+        memory:
+          enabled: false
+          window:
+            enabled: false
+            size: 50
+        context:
+          enabled: false
+          variable_selector: []
+        structured_output:
+          enabled: false
+        retry_config:
+          enabled: false
+          max_retries: 1
+          retry_interval: 1000
+          exponential_backoff:
+            enabled: false
+            multiplier: 2
+            max_interval: 10000
+      height: 90
+      id: llm_report
+      position:
+        x: 638
+        y: 227
+      positionAbsolute:
+        x: 638
+        y: 227
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: ''
+        outputs:
+        - value_selector:
+          - llm_report
+          - text
+          value_type: string
+          variable: result
+        - value_selector:
+          - code_aggregate
+          - summary_json
+          value_type: string
+          variable: summary_json
+        selected: false
+        title: 输出
+        type: end
+      height: 90
+      id: end_node
+      position:
+        x: 942
+        y: 227
+      positionAbsolute:
+        x: 942
+        y: 227
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    viewport:
+      x: 0
+      y: 0
+      zoom: 0.7

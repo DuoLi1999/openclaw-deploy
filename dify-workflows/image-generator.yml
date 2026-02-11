@@ -1,0 +1,338 @@
+app:
+  description: '交通安全宣传图片AI提示词生成，根据主题、风格和场景生成中英文图片生成提示词，输出结构化prompt数据'
+  icon: "\U0001F3A8"
+  icon_background: '#E8D5FF'
+  icon_type: emoji
+  mode: workflow
+  name: image-generator
+  use_icon_as_answer_icon: false
+dependencies: []
+kind: app
+version: 0.3.1
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      enabled: false
+    opening_statement: ''
+    retriever_resource:
+      enabled: false
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: start
+        targetType: llm
+      id: start-to-llm-prompt
+      source: start_node
+      sourceHandle: source
+      target: llm_prompt
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: code
+      id: llm-prompt-to-code
+      source: llm_prompt
+      sourceHandle: source
+      target: code_structure
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: end
+      id: code-to-end
+      source: code_structure
+      sourceHandle: source
+      target: end_node
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        desc: '输入图片生成的主题、风格、场景和画面比例'
+        selected: false
+        title: 开始
+        type: start
+        variables:
+        - label: 图片主题
+          max_length: 500
+          options: []
+          required: true
+          type: text-input
+          variable: topic
+        - label: 图片风格
+          max_length: null
+          options:
+          - realistic
+          - illustration
+          - flat
+          - chinese_style
+          required: true
+          type: select
+          variable: style
+        - label: 场景描述
+          max_length: 2000
+          options: []
+          required: false
+          type: paragraph
+          variable: scene_description
+        - label: 画面比例
+          max_length: null
+          options:
+          - '1:1'
+          - '16:9'
+          - '9:16'
+          - '4:3'
+          required: true
+          type: select
+          variable: aspect_ratio
+      height: 90
+      id: start_node
+      position:
+        x: 30
+        y: 227
+      positionAbsolute:
+        x: 30
+        y: 227
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: '根据主题、风格和场景生成详细的中英文图片生成提示词'
+        title: 提示词生成
+        type: llm
+        model:
+          provider: deepseek
+          name: deepseek-chat
+          mode: chat
+          completion_params:
+            temperature: 0.7
+        prompt_template:
+        - role: system
+          text: |
+            You are an expert AI image prompt engineer specializing in traffic safety illustrations. Your task is to generate high-quality, detailed image generation prompts for traffic safety posters and illustrations used by Chinese traffic police departments.
+
+            ## 风格映射
+
+            - **realistic**: 写实摄影风格，高清质感，真实光影，适合严肃警示类海报
+            - **illustration**: 手绘插画风格，色彩鲜明，线条清晰，适合科普教育类内容
+            - **flat**: 扁平设计风格，几何图形，简洁配色，适合信息图表和社交媒体传播
+            - **chinese_style**: 中国风/国潮风格，融合传统元素与现代设计，水墨、剪纸或年画元素，适合节日主题和文化传播
+
+            ## 画面比例用途
+
+            - **1:1**: 社交媒体头像、微信朋友圈方图
+            - **16:9**: 微信公众号封面、横版海报、电子屏投放
+            - **9:16**: 抖音/快手短视频封面、竖版海报、手机壁纸
+            - **4:3**: 传统海报、宣传栏展板
+
+            ## 输出要求
+
+            请严格按照以下格式输出，使用明确的标记分隔各部分：
+
+            === PROMPT_EN ===
+            [English prompt: Include detailed description of composition, subject, action, environment, lighting, color palette, mood, and style modifiers. Be specific about camera angle, depth of field, and artistic references where appropriate. Ensure the prompt is optimized for mainstream AI image generators like Midjourney, DALL-E, or Stable Diffusion.]
+
+            === PROMPT_ZH ===
+            [中文提示词: 与英文版本对应的中文描述，包含构图、主体、动作、环境、光线、色彩、氛围和风格修饰词。使用专业的摄影/设计术语。]
+
+            === NEGATIVE_PROMPT ===
+            [Negative prompt in English: List elements to avoid, such as low quality, blurry, distorted, inappropriate content, wrong text, etc. Include traffic-safety-specific negatives like glorifying dangerous behavior.]
+
+            === STYLE_TAGS ===
+            [Comma-separated style tags in English, e.g.: photorealistic, cinematic lighting, 8k, traffic safety, public service announcement, Chinese police, etc.]
+
+            ## 交通安全海报设计原则
+
+            1. **安全导向**: 画面必须传达正确的交通安全理念，绝不美化违法行为
+            2. **合规性**: 警察制服、警车、标志标线等元素必须符合中国标准
+            3. **传播力**: 画面要有视觉冲击力，适合在社交媒体传播
+            4. **可读性**: 预留文字排版空间，避免过于复杂的画面
+            5. **正面引导**: 优先展示正确行为，而非事故惨状
+        - role: user
+          text: |
+            请为以下交通安全宣传图片生成AI绘图提示词：
+
+            **图片主题**：{{#start_node.topic#}}
+            **图片风格**：{{#start_node.style#}}
+            **画面比例**：{{#start_node.aspect_ratio#}}
+            {% if start_node.scene_description %}
+            **场景描述**：{{#start_node.scene_description#}}
+            {% endif %}
+
+            请生成详细的中英文提示词、负面提示词和风格标签。
+        vision:
+          enabled: false
+          configs:
+            variable_selector: []
+        memory:
+          enabled: false
+          window:
+            enabled: false
+            size: 50
+        context:
+          enabled: false
+          variable_selector: []
+        structured_output:
+          enabled: false
+        retry_config:
+          enabled: false
+          max_retries: 1
+          retry_interval: 1000
+          exponential_backoff:
+            enabled: false
+            multiplier: 2
+            max_interval: 10000
+      height: 90
+      id: llm_prompt
+      position:
+        x: 334
+        y: 227
+      positionAbsolute:
+        x: 334
+        y: 227
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: '从LLM输出中提取结构化的prompt_en、prompt_zh、negative_prompt和style_tags'
+        title: 结构化输出
+        type: code
+        code_language: python3
+        code: |
+          def main(llm_output: str) -> dict:
+              import json
+
+              prompt_en = ""
+              prompt_zh = ""
+              negative_prompt = ""
+              style_tags = ""
+
+              text = llm_output.strip()
+
+              # Extract PROMPT_EN
+              if "=== PROMPT_EN ===" in text:
+                  after_en = text.split("=== PROMPT_EN ===")[1]
+                  if "=== PROMPT_ZH ===" in after_en:
+                      prompt_en = after_en.split("=== PROMPT_ZH ===")[0].strip()
+                  elif "===" in after_en:
+                      prompt_en = after_en.split("===")[0].strip()
+                  else:
+                      prompt_en = after_en.strip()
+
+              # Extract PROMPT_ZH
+              if "=== PROMPT_ZH ===" in text:
+                  after_zh = text.split("=== PROMPT_ZH ===")[1]
+                  if "=== NEGATIVE_PROMPT ===" in after_zh:
+                      prompt_zh = after_zh.split("=== NEGATIVE_PROMPT ===")[0].strip()
+                  elif "===" in after_zh:
+                      prompt_zh = after_zh.split("===")[0].strip()
+                  else:
+                      prompt_zh = after_zh.strip()
+
+              # Extract NEGATIVE_PROMPT
+              if "=== NEGATIVE_PROMPT ===" in text:
+                  after_neg = text.split("=== NEGATIVE_PROMPT ===")[1]
+                  if "=== STYLE_TAGS ===" in after_neg:
+                      negative_prompt = after_neg.split("=== STYLE_TAGS ===")[0].strip()
+                  elif "===" in after_neg:
+                      negative_prompt = after_neg.split("===")[0].strip()
+                  else:
+                      negative_prompt = after_neg.strip()
+
+              # Extract STYLE_TAGS
+              if "=== STYLE_TAGS ===" in text:
+                  after_tags = text.split("=== STYLE_TAGS ===")[1]
+                  if "===" in after_tags:
+                      style_tags = after_tags.split("===")[0].strip()
+                  else:
+                      style_tags = after_tags.strip()
+
+              # Build structured JSON
+              prompt_json = json.dumps({
+                  "prompt_en": prompt_en,
+                  "prompt_zh": prompt_zh,
+                  "negative_prompt": negative_prompt,
+                  "style_tags": [tag.strip() for tag in style_tags.split(",") if tag.strip()]
+              }, ensure_ascii=False)
+
+              return {
+                  "prompt_json": prompt_json
+              }
+        variables:
+        - value_selector:
+          - llm_prompt
+          - text
+          variable: llm_output
+        outputs:
+          prompt_json:
+            type: string
+            children: null
+      height: 90
+      id: code_structure
+      position:
+        x: 638
+        y: 227
+      positionAbsolute:
+        x: 638
+        y: 227
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: ''
+        outputs:
+        - value_selector:
+          - llm_prompt
+          - text
+          value_type: string
+          variable: result
+        - value_selector:
+          - code_structure
+          - prompt_json
+          value_type: string
+          variable: prompt_json
+        selected: false
+        title: 输出
+        type: end
+      height: 90
+      id: end_node
+      position:
+        x: 942
+        y: 227
+      positionAbsolute:
+        x: 942
+        y: 227
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    viewport:
+      x: 0
+      y: 0
+      zoom: 0.7

@@ -1,0 +1,1062 @@
+app:
+  description: '交通安全宣传内容三级审核：初审(格式+敏感词) → 复审(内容质量) → 终审(政策合规)，输出完整审核报告'
+  icon: "\U0001F50D"
+  icon_background: '#D5E8FF'
+  icon_type: emoji
+  mode: workflow
+  name: content-reviewer-3level
+  use_icon_as_answer_icon: false
+dependencies: []
+kind: app
+version: 0.3.1
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      enabled: false
+    opening_statement: ''
+    retriever_resource:
+      enabled: false
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: start
+        targetType: llm
+      id: start-to-llm-level1
+      source: start_node
+      sourceHandle: source
+      target: llm_level1
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: code
+      id: llm-level1-to-code1
+      source: llm_level1
+      sourceHandle: source
+      target: code_parse1
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: llm
+      id: code1-to-llm-level2
+      source: code_parse1
+      sourceHandle: source
+      target: llm_level2
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: code
+      id: llm-level2-to-code2
+      source: llm_level2
+      sourceHandle: source
+      target: code_parse2
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: llm
+      id: code2-to-llm-level3
+      source: code_parse2
+      sourceHandle: source
+      target: llm_level3
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: code
+      id: llm-level3-to-code3
+      source: llm_level3
+      sourceHandle: source
+      target: code_parse3
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: code
+      id: code3-to-code-final
+      source: code_parse3
+      sourceHandle: source
+      target: code_final
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: template-transform
+      id: code-final-to-template
+      source: code_final
+      sourceHandle: source
+      target: template_report
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: template-transform
+        targetType: end
+      id: template-to-end
+      source: template_report
+      sourceHandle: source
+      target: end_node
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        desc: '输入待审核的文案内容'
+        selected: false
+        title: 开始
+        type: start
+        variables:
+        - label: 待审核内容
+          max_length: 5000
+          options: []
+          required: true
+          type: paragraph
+          variable: content
+        - label: 目标平台
+          max_length: null
+          options:
+          - weibo
+          - wechat_mp
+          - douyin
+          - kuaishou
+          - toutiao
+          - 未指定
+          required: false
+          type: select
+          variable: platform
+        - label: 内容来源
+          max_length: 200
+          options: []
+          required: false
+          type: text-input
+          variable: content_source
+      height: 90
+      id: start_node
+      position:
+        x: 30
+        y: 282
+      positionAbsolute:
+        x: 30
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: '初审：格式规范性检查 + 敏感词检测'
+        title: 初审-格式与敏感词
+        type: llm
+        model:
+          provider: deepseek
+          name: deepseek-chat
+          mode: chat
+          completion_params:
+            temperature: 0.05
+        prompt_template:
+        - role: system
+          text: |
+            你是一名政务内容初审编辑。你的职责是对文案进行第一轮审核，重点检查格式规范性和敏感词。
+
+            ## 审核项目
+
+            ### A. 格式规范性
+            1. 标点符号使用是否正确（中文标点、引号配对等）
+            2. 段落结构是否清晰
+            3. 如有数据引用，是否标注了来源/时间
+            4. 如有法规引用，名称是否完整准确
+            5. 平台适配性（如有平台信息）：
+               - 微博：是否超过140字
+               - 短视频：口播文案是否过长
+               - 微信公众号：是否有结构化标题
+
+            ### B. 敏感词检测
+            1. 政治敏感表述
+            2. 法律风险用语（未审先判、隐私泄露等）
+            3. 不当措辞（歧视性、侮辱性、过度血腥）
+            4. 交通术语准确性（法规名称、处罚标准）
+
+            ## 输出格式（纯JSON，无额外文字）
+
+            ```json
+            {
+              "level": "初审",
+              "status": "pass/warning/block",
+              "score": 85,
+              "issues": [
+                {
+                  "type": "format/sensitive",
+                  "severity": "error/warning/info",
+                  "location": "问题所在位置",
+                  "description": "问题描述",
+                  "suggestion": "修改建议"
+                }
+              ],
+              "summary": "一句话总结初审结论"
+            }
+            ```
+
+            status说明：
+            - pass：无error级别问题
+            - warning：有warning但无error
+            - block：存在error级别问题，建议驳回
+        - role: user
+          text: |
+            请对以下内容进行初审（格式规范性 + 敏感词检测）：
+
+            **目标平台**：{{#start_node.platform#}}
+
+            ---
+            {{#start_node.content#}}
+            ---
+        vision:
+          enabled: false
+          configs:
+            variable_selector: []
+        memory:
+          enabled: false
+          window:
+            enabled: false
+            size: 50
+        context:
+          enabled: false
+          variable_selector: []
+        structured_output:
+          enabled: false
+        retry_config:
+          enabled: false
+          max_retries: 1
+          retry_interval: 1000
+          exponential_backoff:
+            enabled: false
+            multiplier: 2
+            max_interval: 10000
+      height: 90
+      id: llm_level1
+      position:
+        x: 334
+        y: 282
+      positionAbsolute:
+        x: 334
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: '解析初审LLM输出的JSON'
+        title: 初审结果解析
+        type: code
+        code_language: python3
+        code: |
+          def main(result: str) -> dict:
+              import json
+
+              try:
+                  text = result.strip()
+                  if '```json' in text:
+                      text = text.split('```json')[1].split('```')[0].strip()
+                  elif '```' in text:
+                      text = text.split('```')[1].split('```')[0].strip()
+
+                  data = json.loads(text)
+                  status = data.get("status", "pass")
+                  score = data.get("score", 80)
+                  issues = data.get("issues", [])
+                  error_count = sum(1 for i in issues if i.get("severity") == "error")
+                  warning_count = sum(1 for i in issues if i.get("severity") == "warning")
+                  summary = data.get("summary", "")
+
+              except Exception:
+                  status = "pass"
+                  score = 80
+                  error_count = 0
+                  warning_count = 0
+                  summary = "初审结果解析异常，默认通过"
+
+              return {
+                  "level1_status": status,
+                  "level1_score": score,
+                  "level1_errors": error_count,
+                  "level1_warnings": warning_count,
+                  "level1_summary": summary,
+                  "level1_raw": result
+              }
+        variables:
+        - value_selector:
+          - llm_level1
+          - text
+          variable: result
+        outputs:
+          level1_status:
+            type: string
+            children: null
+          level1_score:
+            type: number
+            children: null
+          level1_errors:
+            type: number
+            children: null
+          level1_warnings:
+            type: number
+            children: null
+          level1_summary:
+            type: string
+            children: null
+          level1_raw:
+            type: string
+            children: null
+      height: 90
+      id: code_parse1
+      position:
+        x: 638
+        y: 282
+      positionAbsolute:
+        x: 638
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: '复审：内容质量评估'
+        title: 复审-内容质量
+        type: llm
+        model:
+          provider: deepseek
+          name: deepseek-chat
+          mode: chat
+          completion_params:
+            temperature: 0.1
+        prompt_template:
+        - role: system
+          text: |
+            你是一名资深的政务新媒体内容质量审核员。你的职责是对文案进行第二轮审核，重点评估内容质量。
+
+            ## 审核维度
+
+            1. **信息准确性（30分）**
+               - 引用的法规条文、数据、案例是否准确
+               - 是否存在模糊或可能误导读者的表述
+               - 专业术语使用是否规范
+
+            2. **逻辑连贯性（25分）**
+               - 论述是否有内在逻辑
+               - 段落之间的衔接是否自然
+               - 结论是否由前文论据支撑
+
+            3. **传播效果（25分）**
+               - 标题/开头是否有吸引力
+               - 核心信息是否突出明确
+               - 是否有行动号召（CTA）
+               - 语言风格是否适合目标受众
+
+            4. **原创性（20分）**
+               - 是否有明显的AI生成痕迹（套话、三连排比、程式化过渡）
+               - 表达是否有个性和温度
+               - 是否使用了独特的角度或案例
+
+            ## 输出格式（纯JSON，无额外文字）
+
+            ```json
+            {
+              "level": "复审",
+              "status": "pass/warning/block",
+              "score": 78,
+              "dimensions": {
+                "accuracy": {"score": 25, "max": 30, "note": "说明"},
+                "coherence": {"score": 20, "max": 25, "note": "说明"},
+                "effectiveness": {"score": 18, "max": 25, "note": "说明"},
+                "originality": {"score": 15, "max": 20, "note": "说明"}
+              },
+              "issues": [
+                {
+                  "type": "accuracy/coherence/effectiveness/originality",
+                  "severity": "error/warning/info",
+                  "location": "位置",
+                  "description": "描述",
+                  "suggestion": "建议"
+                }
+              ],
+              "summary": "一句话总结复审结论"
+            }
+            ```
+
+            评分标准：总分≥70为pass，50-69为warning，<50为block
+        - role: user
+          text: |
+            请对以下内容进行复审（内容质量评估）：
+
+            **初审结果**：{{#code_parse1.level1_summary#}}
+
+            ---
+            {{#start_node.content#}}
+            ---
+        vision:
+          enabled: false
+          configs:
+            variable_selector: []
+        memory:
+          enabled: false
+          window:
+            enabled: false
+            size: 50
+        context:
+          enabled: false
+          variable_selector: []
+        structured_output:
+          enabled: false
+        retry_config:
+          enabled: false
+          max_retries: 1
+          retry_interval: 1000
+          exponential_backoff:
+            enabled: false
+            multiplier: 2
+            max_interval: 10000
+      height: 90
+      id: llm_level2
+      position:
+        x: 942
+        y: 282
+      positionAbsolute:
+        x: 942
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: '解析复审LLM输出的JSON'
+        title: 复审结果解析
+        type: code
+        code_language: python3
+        code: |
+          def main(result: str) -> dict:
+              import json
+
+              try:
+                  text = result.strip()
+                  if '```json' in text:
+                      text = text.split('```json')[1].split('```')[0].strip()
+                  elif '```' in text:
+                      text = text.split('```')[1].split('```')[0].strip()
+
+                  data = json.loads(text)
+                  status = data.get("status", "pass")
+                  score = data.get("score", 70)
+                  issues = data.get("issues", [])
+                  error_count = sum(1 for i in issues if i.get("severity") == "error")
+                  warning_count = sum(1 for i in issues if i.get("severity") == "warning")
+                  summary = data.get("summary", "")
+
+              except Exception:
+                  status = "pass"
+                  score = 70
+                  error_count = 0
+                  warning_count = 0
+                  summary = "复审结果解析异常，默认通过"
+
+              return {
+                  "level2_status": status,
+                  "level2_score": score,
+                  "level2_errors": error_count,
+                  "level2_warnings": warning_count,
+                  "level2_summary": summary,
+                  "level2_raw": result
+              }
+        variables:
+        - value_selector:
+          - llm_level2
+          - text
+          variable: result
+        outputs:
+          level2_status:
+            type: string
+            children: null
+          level2_score:
+            type: number
+            children: null
+          level2_errors:
+            type: number
+            children: null
+          level2_warnings:
+            type: number
+            children: null
+          level2_summary:
+            type: string
+            children: null
+          level2_raw:
+            type: string
+            children: null
+      height: 90
+      id: code_parse2
+      position:
+        x: 1246
+        y: 282
+      positionAbsolute:
+        x: 1246
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: '终审：政策合规性审核'
+        title: 终审-政策合规
+        type: llm
+        model:
+          provider: deepseek
+          name: deepseek-chat
+          mode: chat
+          completion_params:
+            temperature: 0.05
+        prompt_template:
+        - role: system
+          text: |
+            你是一名政务宣传终审主管。你的职责是对文案进行最终审核，重点确认政策合规性和发布安全性。
+
+            ## 终审检查项
+
+            1. **政策一致性**
+               - 内容是否与当前交通安全政策方向一致
+               - 是否可能被解读为与上级政策矛盾
+               - 是否涉及未公开的政策或内部信息
+
+            2. **舆情风险**
+               - 是否可能引发负面舆论
+               - 是否可能被断章取义或恶意解读
+               - 评论区可能出现的争议点
+
+            3. **法律合规**
+               - 引用的法规是否为现行有效版本
+               - 处罚标准是否与最新规定一致
+               - 是否存在执法权限越界的表述
+
+            4. **发布安全**
+               - 是否可能与近期敏感事件产生关联
+               - 发布时机是否合适
+               - 是否需要上级审批才能发布
+
+            ## 输出格式（纯JSON，无额外文字）
+
+            ```json
+            {
+              "level": "终审",
+              "status": "pass/warning/block",
+              "score": 90,
+              "issues": [
+                {
+                  "type": "policy/public_opinion/legal/publish_safety",
+                  "severity": "error/warning/info",
+                  "description": "描述",
+                  "risk_level": "高/中/低",
+                  "suggestion": "建议"
+                }
+              ],
+              "approval": "approved/conditional/rejected",
+              "conditions": "如果是conditional，列出发布前必须满足的条件",
+              "summary": "一句话总结终审结论"
+            }
+            ```
+
+            approval说明：
+            - approved：可直接发布
+            - conditional：满足条件后可发布
+            - rejected：不建议发布，需重大修改
+        - role: user
+          text: |
+            请对以下内容进行终审（政策合规性审核）：
+
+            **初审结果**：{{#code_parse1.level1_summary#}}
+            **复审结果**：{{#code_parse2.level2_summary#}}
+
+            ---
+            {{#start_node.content#}}
+            ---
+        vision:
+          enabled: false
+          configs:
+            variable_selector: []
+        memory:
+          enabled: false
+          window:
+            enabled: false
+            size: 50
+        context:
+          enabled: false
+          variable_selector: []
+        structured_output:
+          enabled: false
+        retry_config:
+          enabled: false
+          max_retries: 1
+          retry_interval: 1000
+          exponential_backoff:
+            enabled: false
+            multiplier: 2
+            max_interval: 10000
+      height: 90
+      id: llm_level3
+      position:
+        x: 1550
+        y: 282
+      positionAbsolute:
+        x: 1550
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: '解析终审LLM输出的JSON'
+        title: 终审结果解析
+        type: code
+        code_language: python3
+        code: |
+          def main(result: str) -> dict:
+              import json
+
+              try:
+                  text = result.strip()
+                  if '```json' in text:
+                      text = text.split('```json')[1].split('```')[0].strip()
+                  elif '```' in text:
+                      text = text.split('```')[1].split('```')[0].strip()
+
+                  data = json.loads(text)
+                  status = data.get("status", "pass")
+                  score = data.get("score", 80)
+                  approval = data.get("approval", "approved")
+                  issues = data.get("issues", [])
+                  error_count = sum(1 for i in issues if i.get("severity") == "error")
+                  warning_count = sum(1 for i in issues if i.get("severity") == "warning")
+                  summary = data.get("summary", "")
+                  conditions = data.get("conditions", "")
+
+              except Exception:
+                  status = "pass"
+                  score = 80
+                  approval = "approved"
+                  error_count = 0
+                  warning_count = 0
+                  summary = "终审结果解析异常，默认通过"
+                  conditions = ""
+
+              return {
+                  "level3_status": status,
+                  "level3_score": score,
+                  "level3_approval": approval,
+                  "level3_errors": error_count,
+                  "level3_warnings": warning_count,
+                  "level3_summary": summary,
+                  "level3_conditions": conditions,
+                  "level3_raw": result
+              }
+        variables:
+        - value_selector:
+          - llm_level3
+          - text
+          variable: result
+        outputs:
+          level3_status:
+            type: string
+            children: null
+          level3_score:
+            type: number
+            children: null
+          level3_approval:
+            type: string
+            children: null
+          level3_errors:
+            type: number
+            children: null
+          level3_warnings:
+            type: number
+            children: null
+          level3_summary:
+            type: string
+            children: null
+          level3_conditions:
+            type: string
+            children: null
+          level3_raw:
+            type: string
+            children: null
+      height: 90
+      id: code_parse3
+      position:
+        x: 1854
+        y: 282
+      positionAbsolute:
+        x: 1854
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: '综合三级审核结果，输出最终判定'
+        title: 综合判定
+        type: code
+        code_language: python3
+        code: |
+          def main(l1_status: str, l1_score: float, l1_errors: float, l1_warnings: float,
+                   l2_status: str, l2_score: float, l2_errors: float, l2_warnings: float,
+                   l3_status: str, l3_score: float, l3_errors: float, l3_warnings: float,
+                   l3_approval: str) -> dict:
+              import json
+
+              total_errors = int(l1_errors) + int(l2_errors) + int(l3_errors)
+              total_warnings = int(l1_warnings) + int(l2_warnings) + int(l3_warnings)
+              total_issues = total_errors + total_warnings
+
+              statuses = [l1_status, l2_status, l3_status]
+
+              if "block" in statuses or l3_approval == "rejected":
+                  final_status = "rejected"
+              elif total_errors > 0 or "warning" in statuses or l3_approval == "conditional":
+                  final_status = "revision_required"
+              else:
+                  final_status = "approved"
+
+              avg_score = (float(l1_score) + float(l2_score) + float(l3_score)) / 3
+
+              review_json = json.dumps({
+                  "level1": {"status": l1_status, "score": int(l1_score), "errors": int(l1_errors), "warnings": int(l1_warnings)},
+                  "level2": {"status": l2_status, "score": int(l2_score), "errors": int(l2_errors), "warnings": int(l2_warnings)},
+                  "level3": {"status": l3_status, "score": int(l3_score), "errors": int(l3_errors), "warnings": int(l3_warnings), "approval": l3_approval},
+                  "final_status": final_status,
+                  "total_errors": total_errors,
+                  "total_warnings": total_warnings,
+                  "avg_score": round(avg_score, 1)
+              }, ensure_ascii=False)
+
+              return {
+                  "final_status": final_status,
+                  "issue_count": total_issues,
+                  "total_errors": total_errors,
+                  "total_warnings": total_warnings,
+                  "avg_score": round(avg_score, 1),
+                  "review_json": review_json
+              }
+        variables:
+        - value_selector:
+          - code_parse1
+          - level1_status
+          variable: l1_status
+        - value_selector:
+          - code_parse1
+          - level1_score
+          variable: l1_score
+        - value_selector:
+          - code_parse1
+          - level1_errors
+          variable: l1_errors
+        - value_selector:
+          - code_parse1
+          - level1_warnings
+          variable: l1_warnings
+        - value_selector:
+          - code_parse2
+          - level2_status
+          variable: l2_status
+        - value_selector:
+          - code_parse2
+          - level2_score
+          variable: l2_score
+        - value_selector:
+          - code_parse2
+          - level2_errors
+          variable: l2_errors
+        - value_selector:
+          - code_parse2
+          - level2_warnings
+          variable: l2_warnings
+        - value_selector:
+          - code_parse3
+          - level3_status
+          variable: l3_status
+        - value_selector:
+          - code_parse3
+          - level3_score
+          variable: l3_score
+        - value_selector:
+          - code_parse3
+          - level3_errors
+          variable: l3_errors
+        - value_selector:
+          - code_parse3
+          - level3_warnings
+          variable: l3_warnings
+        - value_selector:
+          - code_parse3
+          - level3_approval
+          variable: l3_approval
+        outputs:
+          final_status:
+            type: string
+            children: null
+          issue_count:
+            type: number
+            children: null
+          total_errors:
+            type: number
+            children: null
+          total_warnings:
+            type: number
+            children: null
+          avg_score:
+            type: number
+            children: null
+          review_json:
+            type: string
+            children: null
+      height: 90
+      id: code_final
+      position:
+        x: 2158
+        y: 282
+      positionAbsolute:
+        x: 2158
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: '生成完整的三级审核报告'
+        title: 审核报告生成
+        type: template-transform
+        template: |
+          # 内容审核报告
+
+          ## 审核概览
+
+          | 项目 | 结果 |
+          |------|------|
+          | 最终结论 | {% if final_status == 'approved' %}✅ 审核通过{% elif final_status == 'revision_required' %}⚠️ 需要修订{% else %}❌ 审核驳回{% endif %} |
+          | 综合评分 | {{ avg_score }}/100 |
+          | 问题总数 | {{ total_errors }} 个错误 + {{ total_warnings }} 个警告 |
+
+          ---
+
+          ## 一、初审 — 格式与敏感词
+
+          **状态**：{% if level1_status == 'pass' %}✅ 通过{% elif level1_status == 'warning' %}⚠️ 有警告{% else %}❌ 未通过{% endif %} | **评分**：{{ level1_score }}
+
+          {{ level1_summary }}
+
+          <details>
+          <summary>查看初审详情</summary>
+
+          {{ level1_raw }}
+
+          </details>
+
+          ---
+
+          ## 二、复审 — 内容质量
+
+          **状态**：{% if level2_status == 'pass' %}✅ 通过{% elif level2_status == 'warning' %}⚠️ 有警告{% else %}❌ 未通过{% endif %} | **评分**：{{ level2_score }}
+
+          {{ level2_summary }}
+
+          <details>
+          <summary>查看复审详情</summary>
+
+          {{ level2_raw }}
+
+          </details>
+
+          ---
+
+          ## 三、终审 — 政策合规
+
+          **状态**：{% if level3_status == 'pass' %}✅ 通过{% elif level3_status == 'warning' %}⚠️ 有警告{% else %}❌ 未通过{% endif %} | **评分**：{{ level3_score }}
+          **发布建议**：{% if level3_approval == 'approved' %}可直接发布{% elif level3_approval == 'conditional' %}满足条件后发布{% else %}不建议发布{% endif %}
+
+          {{ level3_summary }}
+
+          {% if level3_conditions %}**发布条件**：{{ level3_conditions }}{% endif %}
+
+          <details>
+          <summary>查看终审详情</summary>
+
+          {{ level3_raw }}
+
+          </details>
+        variables:
+        - value_selector:
+          - code_final
+          - final_status
+          variable: final_status
+        - value_selector:
+          - code_final
+          - avg_score
+          variable: avg_score
+        - value_selector:
+          - code_final
+          - total_errors
+          variable: total_errors
+        - value_selector:
+          - code_final
+          - total_warnings
+          variable: total_warnings
+        - value_selector:
+          - code_parse1
+          - level1_status
+          variable: level1_status
+        - value_selector:
+          - code_parse1
+          - level1_score
+          variable: level1_score
+        - value_selector:
+          - code_parse1
+          - level1_summary
+          variable: level1_summary
+        - value_selector:
+          - code_parse1
+          - level1_raw
+          variable: level1_raw
+        - value_selector:
+          - code_parse2
+          - level2_status
+          variable: level2_status
+        - value_selector:
+          - code_parse2
+          - level2_score
+          variable: level2_score
+        - value_selector:
+          - code_parse2
+          - level2_summary
+          variable: level2_summary
+        - value_selector:
+          - code_parse2
+          - level2_raw
+          variable: level2_raw
+        - value_selector:
+          - code_parse3
+          - level3_status
+          variable: level3_status
+        - value_selector:
+          - code_parse3
+          - level3_score
+          variable: level3_score
+        - value_selector:
+          - code_parse3
+          - level3_summary
+          variable: level3_summary
+        - value_selector:
+          - code_parse3
+          - level3_raw
+          variable: level3_raw
+        - value_selector:
+          - code_parse3
+          - level3_approval
+          variable: level3_approval
+        - value_selector:
+          - code_parse3
+          - level3_conditions
+          variable: level3_conditions
+      height: 90
+      id: template_report
+      position:
+        x: 2462
+        y: 282
+      positionAbsolute:
+        x: 2462
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: ''
+        outputs:
+        - value_selector:
+          - template_report
+          - output
+          value_type: string
+          variable: result
+        - value_selector:
+          - code_final
+          - final_status
+          value_type: string
+          variable: final_status
+        - value_selector:
+          - code_final
+          - review_json
+          value_type: string
+          variable: review_json
+        - value_selector:
+          - code_final
+          - issue_count
+          value_type: number
+          variable: issue_count
+        selected: false
+        title: 输出
+        type: end
+      height: 90
+      id: end_node
+      position:
+        x: 2766
+        y: 282
+      positionAbsolute:
+        x: 2766
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    viewport:
+      x: 0
+      y: 0
+      zoom: 0.4

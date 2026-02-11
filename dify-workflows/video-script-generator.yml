@@ -1,0 +1,670 @@
+app:
+  description: '交通安全短视频脚本生成，输出包含分镜表、口播文案、拍摄建议的完整视频脚本'
+  icon: "\U0001F3AC"
+  icon_background: '#E4FBCC'
+  icon_type: emoji
+  mode: workflow
+  name: video-script-generator
+  use_icon_as_answer_icon: false
+dependencies: []
+kind: app
+version: 0.3.1
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      enabled: false
+    opening_statement: ''
+    retriever_resource:
+      enabled: false
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: start
+        targetType: llm
+      id: start-to-llm-structure
+      source: start_node
+      sourceHandle: source
+      target: llm_structure
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: llm
+      id: llm-structure-to-llm-script
+      source: llm_structure
+      sourceHandle: source
+      target: llm_script
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: code
+      id: llm-script-to-code
+      source: llm_script
+      sourceHandle: source
+      target: code_validate
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: if-else
+      id: code-to-ifelse
+      source: code_validate
+      sourceHandle: source
+      target: if_else_check
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: if-else
+        targetType: template-transform
+      id: ifelse-to-template-pass
+      source: if_else_check
+      sourceHandle: 'true'
+      target: template_output
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: if-else
+        targetType: template-transform
+      id: ifelse-to-template-warn
+      source: if_else_check
+      sourceHandle: 'false'
+      target: template_warn
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: template-transform
+        targetType: variable-aggregator
+      id: template-pass-to-agg
+      source: template_output
+      sourceHandle: source
+      target: agg_result
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: template-transform
+        targetType: variable-aggregator
+      id: template-warn-to-agg
+      source: template_warn
+      sourceHandle: source
+      target: agg_result
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: variable-aggregator
+        targetType: end
+      id: agg-to-end
+      source: agg_result
+      sourceHandle: source
+      target: end_node
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        desc: '输入视频脚本生成所需的参数'
+        selected: false
+        title: 开始
+        type: start
+        variables:
+        - label: 主题关键词
+          max_length: 200
+          options: []
+          required: true
+          type: text-input
+          variable: topic
+        - label: 补充描述
+          max_length: 500
+          options: []
+          required: false
+          type: paragraph
+          variable: description
+        - label: 文案风格
+          max_length: null
+          options:
+          - formal
+          - friendly
+          - humorous
+          - warning
+          required: true
+          type: select
+          variable: style
+        - label: 视频时长
+          max_length: null
+          options:
+          - 15s
+          - 30s
+          - 60s
+          required: true
+          type: select
+          variable: duration
+        - label: 目标平台
+          max_length: null
+          options:
+          - douyin
+          - kuaishou
+          required: true
+          type: select
+          variable: platform
+      height: 90
+      id: start_node
+      position:
+        x: 30
+        y: 282
+      positionAbsolute:
+        x: 30
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: '确定视频的结构框架和每个场景的概要'
+        title: 脚本结构规划
+        type: llm
+        model:
+          provider: deepseek
+          name: deepseek-chat
+          mode: chat
+          completion_params:
+            temperature: 0.7
+        prompt_template:
+        - role: system
+          text: |
+            你是一名短视频内容策划师，擅长为交通安全宣传制作分镜脚本结构。
+
+            ## 短视频结构公式
+
+            ### 15秒视频（3-4个分镜）
+            - [0-3s] Hook：开场冲击画面或悬念问题
+            - [3-10s] 核心内容：一个核心信息点
+            - [10-15s] CTA：行动号召/警示总结
+
+            ### 30秒视频（5-7个分镜）
+            - [0-3s] Hook：强吸引力开场
+            - [3-12s] 问题/案例呈现
+            - [12-22s] 核心解读/知识点
+            - [22-28s] 总结强化
+            - [28-30s] CTA
+
+            ### 60秒视频（8-12个分镜）
+            - [0-5s] Hook：强吸引力开场
+            - [5-15s] 问题/案例呈现（可有转折）
+            - [15-35s] 深度解读（2-3个知识点）
+            - [35-50s] 案例/数据佐证
+            - [50-58s] 总结升华
+            - [58-60s] CTA
+
+            ## 平台差异
+
+            - **douyin（抖音）**：节奏快，画面切换频繁，前3秒决定生死。适合：数据冲击、悬念反转、情感故事
+            - **kuaishou（快手）**：更接地气，可以慢一点展开，重视真实感。适合：真人出镜讲解、生活场景、朴实叙事
+
+            ## 输出格式
+
+            输出每个场景的概要，包含：
+            - 时间段
+            - 场景标题
+            - 内容概要（一句话）
+            - 画面类型（实拍/动画/字幕卡/监控画面/数据图表）
+
+            用表格格式：
+            | 时间段 | 场景标题 | 内容概要 | 画面类型 |
+        - role: user
+          text: |
+            请为以下主题设计视频脚本结构：
+
+            **主题**：{{#start_node.topic#}}
+            **补充描述**：{{#start_node.description#}}
+            **风格**：{{#start_node.style#}}
+            **视频时长**：{{#start_node.duration#}}
+            **目标平台**：{{#start_node.platform#}}
+        vision:
+          enabled: false
+          configs:
+            variable_selector: []
+        memory:
+          enabled: false
+          window:
+            enabled: false
+            size: 50
+        context:
+          enabled: false
+          variable_selector: []
+        structured_output:
+          enabled: false
+        retry_config:
+          enabled: false
+          max_retries: 1
+          retry_interval: 1000
+          exponential_backoff:
+            enabled: false
+            multiplier: 2
+            max_interval: 10000
+      height: 90
+      id: llm_structure
+      position:
+        x: 334
+        y: 282
+      positionAbsolute:
+        x: 334
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: '基于结构框架生成完整的分镜表脚本'
+        title: 详细脚本生成
+        type: llm
+        model:
+          provider: deepseek
+          name: deepseek-chat
+          mode: chat
+          completion_params:
+            temperature: 0.8
+        prompt_template:
+        - role: system
+          text: |
+            你是一名专业的短视频脚本编剧，为交通安全宣传编写完整的分镜脚本。
+
+            ## 脚本输出格式
+
+            对每个分镜场景，使用以下格式：
+
+            ---
+            **场景 X** [时间段]
+            **画面描述**：（详细描述镜头画面内容，包括景别、运镜、画面元素）
+            **口播文案**：（演员/配音的具体台词，口语化短句）
+            **字幕**：（屏幕上需要显示的文字，含强调关键词）
+            **BGM/音效**：（背景音乐风格或具体音效建议）
+            **拍摄建议**：（机位、光线、道具等实操建议）
+            ---
+
+            ## 口播文案要求
+
+            1. 每句不超过15个字，长短句交替
+            2. 口语化表达，像在和朋友聊天
+            3. 关键数据和法规要准确
+            4. 全部口播文案加起来不超过：
+               - 15秒视频：50字
+               - 30秒视频：100字
+               - 60秒视频：200字
+            5. 前3秒的Hook必须是最强的那句话
+
+            ## 风格适配
+
+            - **formal**：专业权威感，可用新闻播报腔调
+            - **friendly**：邻家大哥/姐姐的语气，温暖亲切
+            - **humorous**：反转/吐槽/夸张对比，但不消解安全严肃性
+            - **warning**：沉重/震撼/发人深省，数据和案例冲击
+
+            ## 注意事项
+
+            - 不使用血腥画面描述
+            - 法规引用须准确
+            - 画面描述要可执行（不要写"宇宙级特效"这种无法实现的内容）
+            - 最后一个场景必须有明确的行动号召
+        - role: user
+          text: |
+            请基于以下脚本结构，生成完整的分镜脚本：
+
+            **主题**：{{#start_node.topic#}}
+            **风格**：{{#start_node.style#}}
+            **时长**：{{#start_node.duration#}}
+            **平台**：{{#start_node.platform#}}
+
+            **脚本结构**：
+            {{#llm_structure.text#}}
+        vision:
+          enabled: false
+          configs:
+            variable_selector: []
+        memory:
+          enabled: false
+          window:
+            enabled: false
+            size: 50
+        context:
+          enabled: false
+          variable_selector: []
+        structured_output:
+          enabled: false
+        retry_config:
+          enabled: false
+          max_retries: 1
+          retry_interval: 1000
+          exponential_backoff:
+            enabled: false
+            multiplier: 2
+            max_interval: 10000
+      height: 90
+      id: llm_script
+      position:
+        x: 638
+        y: 282
+      positionAbsolute:
+        x: 638
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: '校验脚本格式、口播字数、分镜完整性'
+        title: 脚本格式校验
+        type: code
+        code_language: python3
+        code: |
+          def main(script: str, duration: str) -> dict:
+              import re
+
+              # Count scenes
+              scene_matches = re.findall(r'\*\*场景\s*\d+', script)
+              scene_count = len(scene_matches)
+
+              # Extract oral text (口播文案 sections)
+              oral_sections = re.findall(r'口播文案[：:]\s*[（(]?(.+?)[）)]?\s*(?:\n|$)', script, re.DOTALL)
+              oral_text = ''.join(oral_sections)
+              oral_text = re.sub(r'[#*_\[\]()（）【】「」『』\-—…\n\r\t"""]', '', oral_text)
+              oral_text = re.sub(r'\s+', '', oral_text)
+              oral_count = len(oral_text)
+
+              # Duration limits
+              duration_map = {
+                  '15s': {'max_oral': 60, 'min_scenes': 2, 'max_scenes': 5},
+                  '30s': {'max_oral': 120, 'min_scenes': 4, 'max_scenes': 8},
+                  '60s': {'max_oral': 220, 'min_scenes': 6, 'max_scenes': 14},
+              }
+              limits = duration_map.get(duration, duration_map['30s'])
+
+              issues = []
+              is_valid = "true"
+
+              if oral_count > limits['max_oral']:
+                  issues.append("口播文字超出限制：当前约" + str(oral_count) + "字，" + duration + "视频上限" + str(limits['max_oral']) + "字")
+                  is_valid = "false"
+
+              if scene_count < limits['min_scenes']:
+                  issues.append("分镜数量不足：当前" + str(scene_count) + "个，" + duration + "视频建议至少" + str(limits['min_scenes']) + "个")
+
+              if scene_count > limits['max_scenes']:
+                  issues.append("分镜数量过多：当前" + str(scene_count) + "个，" + duration + "视频建议不超过" + str(limits['max_scenes']) + "个")
+
+              issues_text = "；".join(issues) if issues else "脚本格式校验通过"
+
+              return {
+                  "is_valid": is_valid,
+                  "issues": issues_text,
+                  "scene_count": scene_count,
+                  "oral_count": oral_count
+              }
+        variables:
+        - value_selector:
+          - llm_script
+          - text
+          variable: script
+        - value_selector:
+          - start_node
+          - duration
+          variable: duration
+        outputs:
+          is_valid:
+            type: string
+            children: null
+          issues:
+            type: string
+            children: null
+          scene_count:
+            type: number
+            children: null
+          oral_count:
+            type: number
+            children: null
+      height: 90
+      id: code_validate
+      position:
+        x: 942
+        y: 282
+      positionAbsolute:
+        x: 942
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: '根据校验结果决定输出路径'
+        title: 校验判断
+        type: if-else
+        cases:
+        - case_id: 'true'
+          conditions:
+          - comparison_operator: is
+            id: cond-is-valid
+            value: 'true'
+            varType: string
+            variable_selector:
+            - code_validate
+            - is_valid
+          id: 'true'
+          logical_operator: and
+      height: 90
+      id: if_else_check
+      position:
+        x: 1246
+        y: 282
+      positionAbsolute:
+        x: 1246
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: '校验通过，格式化最终输出'
+        title: 脚本输出
+        type: template-transform
+        template: |
+          {{ script }}
+
+          ---
+          📊 脚本信息
+          - 平台：{% if platform == 'douyin' %}抖音{% elif platform == 'kuaishou' %}快手{% else %}{{ platform }}{% endif %}
+          - 视频时长：{{ duration }}
+          - 分镜数量：{{ scene_count }} 个
+          - 口播字数：约{{ oral_count }}字
+          - 校验状态：✅ 通过
+        variables:
+        - value_selector:
+          - llm_script
+          - text
+          variable: script
+        - value_selector:
+          - start_node
+          - platform
+          variable: platform
+        - value_selector:
+          - start_node
+          - duration
+          variable: duration
+        - value_selector:
+          - code_validate
+          - scene_count
+          variable: scene_count
+        - value_selector:
+          - code_validate
+          - oral_count
+          variable: oral_count
+      height: 90
+      id: template_output
+      position:
+        x: 1550
+        y: 132
+      positionAbsolute:
+        x: 1550
+        y: 132
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: '校验有问题，附带警告信息输出'
+        title: 带警告输出
+        type: template-transform
+        template: |
+          {{ script }}
+
+          ---
+          📊 脚本信息
+          - 平台：{% if platform == 'douyin' %}抖音{% elif platform == 'kuaishou' %}快手{% else %}{{ platform }}{% endif %}
+          - 视频时长：{{ duration }}
+          - 分镜数量：{{ scene_count }} 个
+          - 口播字数：约{{ oral_count }}字
+          - 校验状态：⚠️ 有问题
+
+          ⚠️ 校验问题：{{ issues }}
+          建议根据以上问题调整脚本后使用。
+        variables:
+        - value_selector:
+          - llm_script
+          - text
+          variable: script
+        - value_selector:
+          - start_node
+          - platform
+          variable: platform
+        - value_selector:
+          - start_node
+          - duration
+          variable: duration
+        - value_selector:
+          - code_validate
+          - scene_count
+          variable: scene_count
+        - value_selector:
+          - code_validate
+          - oral_count
+          variable: oral_count
+        - value_selector:
+          - code_validate
+          - issues
+          variable: issues
+      height: 90
+      id: template_warn
+      position:
+        x: 1550
+        y: 432
+      positionAbsolute:
+        x: 1550
+        y: 432
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: '合并两个分支的输出'
+        title: 合并结果
+        type: variable-aggregator
+        variables:
+        - - template_output
+          - output
+        - - template_warn
+          - output
+        output_type: string
+        advanced_settings: null
+      height: 90
+      id: agg_result
+      position:
+        x: 1854
+        y: 282
+      positionAbsolute:
+        x: 1854
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: ''
+        outputs:
+        - value_selector:
+          - agg_result
+          - output
+          value_type: string
+          variable: result
+        - value_selector:
+          - start_node
+          - duration
+          value_type: string
+          variable: total_duration
+        - value_selector:
+          - code_validate
+          - scene_count
+          value_type: number
+          variable: scene_count
+        selected: false
+        title: 输出
+        type: end
+      height: 90
+      id: end_node
+      position:
+        x: 2158
+        y: 282
+      positionAbsolute:
+        x: 2158
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    viewport:
+      x: 0
+      y: 0
+      zoom: 0.5

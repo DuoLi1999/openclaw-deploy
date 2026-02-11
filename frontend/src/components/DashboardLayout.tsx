@@ -6,11 +6,16 @@ import {
   FileText,
   Database,
   FolderOpen,
+  Calendar,
+  BarChart3,
+  Crosshair,
+  AlertOctagon,
   Settings,
   LogOut,
   User,
   Bell,
 } from "lucide-react";
+import { ChatWidget } from "./ChatWidget";
 
 export function DashboardLayout() {
   const navigate = useNavigate();
@@ -33,6 +38,10 @@ export function DashboardLayout() {
     { path: "/generate", icon: FileText, label: "文案生成" },
     { path: "/materials", icon: Database, label: "素材库" },
     { path: "/content", icon: FolderOpen, label: "文案管理" },
+    { path: "/plan", icon: Calendar, label: "宣传计划" },
+    { path: "/precision", icon: Crosshair, label: "精准宣传" },
+    { path: "/emergency", icon: AlertOctagon, label: "应急宣传" },
+    { path: "/analytics", icon: BarChart3, label: "效果分析" },
     { path: "/system", icon: Settings, label: "系统管理" },
   ];
 
@@ -124,6 +133,8 @@ export function DashboardLayout() {
           <Outlet />
         </main>
       </div>
+
+      <ChatWidget />
     </div>
   );
 }

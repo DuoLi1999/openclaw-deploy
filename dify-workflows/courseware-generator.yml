@@ -1,0 +1,526 @@
+app:
+  description: '交通安全教育课件生成，根据受众类型（驾驶员、学生、村民等）自动生成结构化课件大纲、详细讲稿和幻灯片JSON'
+  icon: "\U0001F4DA"
+  icon_background: '#E8D5FF'
+  icon_type: emoji
+  mode: workflow
+  name: courseware-generator
+  use_icon_as_answer_icon: false
+dependencies: []
+kind: app
+version: 0.3.1
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      enabled: false
+    opening_statement: ''
+    retriever_resource:
+      enabled: false
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: start
+        targetType: llm
+      id: start-to-llm-outline
+      source: start_node
+      sourceHandle: source
+      target: llm_outline
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: llm
+      id: llm-outline-to-llm-detail
+      source: llm_outline
+      sourceHandle: source
+      target: llm_detail
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: code
+      id: llm-detail-to-code-extract
+      source: llm_detail
+      sourceHandle: source
+      target: code_extract
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: end
+      id: code-extract-to-end
+      source: code_extract
+      sourceHandle: source
+      target: end_node
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        desc: '输入课件主题、受众类型、时长等参数'
+        selected: false
+        title: 开始
+        type: start
+        variables:
+        - label: 课件主题
+          max_length: 500
+          options: []
+          required: true
+          type: paragraph
+          variable: topic
+        - label: 目标受众
+          max_length: null
+          options:
+          - 驾驶员
+          - 中小学生
+          - 老年人
+          - 村民
+          - 企业员工
+          - 外卖骑手
+          required: true
+          type: select
+          variable: audience
+        - label: 课件时长
+          max_length: null
+          options:
+          - 15分钟
+          - 30分钟
+          - 45分钟
+          - 60分钟
+          required: true
+          type: select
+          variable: duration
+        - label: 重点关注领域
+          max_length: 500
+          options: []
+          required: false
+          type: paragraph
+          variable: focus_area
+        - label: 事故数据(JSON)
+          max_length: 10000
+          options: []
+          required: false
+          type: paragraph
+          variable: accident_data
+      height: 90
+      id: start_node
+      position:
+        x: 30
+        y: 227
+      positionAbsolute:
+        x: 30
+        y: 227
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: '根据受众和主题生成课件大纲，包含幻灯片结构'
+        title: 课件大纲生成
+        type: llm
+        model:
+          provider: deepseek
+          name: deepseek-chat
+          mode: chat
+          completion_params:
+            temperature: 0.7
+        prompt_template:
+        - role: system
+          text: |
+            你是一名交通安全教育课件设计专家，擅长根据不同受众特点设计结构化的安全教育课件。你需要生成包含真实案例、法规引用和适合受众语言风格的课件大纲。
+
+            ## 受众适配策略
+
+            ### 中小学生
+            - 使用简单易懂的语言，避免专业术语
+            - 设计互动问答环节，如"考考你"、"对错判断"
+            - 使用卡通风格的画面描述（如：小明过马路的故事）
+            - 加入儿歌、顺口溜帮助记忆（如："红灯停，绿灯行"）
+            - 每页内容不宜过多，重点突出
+
+            ### 老年人
+            - 使用大字号友好排版，每页文字不超过50字
+            - 建议加入本地方言表达
+            - 以日常生活场景为主：买菜过马路、接送孙子、电动车出行
+            - 避免数字化和英文术语
+            - 多用对比图、实景照片描述
+
+            ### 驾驶员
+            - 聚焦法律后果和处罚标准（扣分、罚款、拘留）
+            - 引用真实交通事故案例，强调因果关系
+            - 包含驾驶技巧和应急处置方法
+            - 数据驱动：事故统计、违法高发时段
+
+            ### 外卖骑手
+            - 强调时间压力管理：抢时间≠抢生命
+            - 常见违法行为：逆行、闯红灯、占用机动车道
+            - 头盔佩戴规范和重要性
+            - 平台考核压力与安全的平衡
+            - 用骑手群体身边的真实案例
+
+            ### 村民
+            - 农村道路特点：无信号灯路口、农用车混行、夜间照明不足
+            - 农忙季节安全：农用车载人、疲劳驾驶、酒后驾车
+            - 使用通俗语言，贴近农村生活
+            - 强调"一盔一带"在农村的重要性
+
+            ### 企业员工
+            - 通勤安全：上下班高峰期注意事项
+            - 职业驾驶员专项：货车盲区、疲劳驾驶管理
+            - 企业安全生产责任与个人责任
+            - 酒驾对职业生涯的影响
+
+            ## 课件时长与页数对应
+            - 15分钟：8-10页幻灯片
+            - 30分钟：15-18页幻灯片
+            - 45分钟：22-25页幻灯片
+            - 60分钟：28-32页幻灯片
+
+            ## 每页幻灯片结构要求
+
+            每页必须包含以下要素：
+            1. **页面标题**：简洁有力，不超过15字
+            2. **要点**：3-5个核心要点，每个要点一句话
+            3. **讲者备注**：讲解这一页时的口述要点和衔接语
+            4. **建议配图**：描述适合这一页的图片或图表类型
+            5. **相关法条**：引用相关的道路交通安全法条文（如适用）
+
+            ## 输出格式
+
+            使用Markdown格式，每页幻灯片用 `---` 分隔，格式如下：
+
+            ---
+            ## 第X页：页面标题
+
+            **要点：**
+            - 要点1
+            - 要点2
+            - 要点3
+
+            **讲者备注：**
+            讲解内容...
+
+            **建议配图：**
+            配图描述...
+
+            **相关法条：**
+            《道路交通安全法》第XX条：条文内容
+            ---
+        - role: user
+          text: |
+            请为我生成一份交通安全教育课件大纲：
+
+            **课件主题**：{{#start_node.topic#}}
+            **目标受众**：{{#start_node.audience#}}
+            **课件时长**：{{#start_node.duration#}}
+
+            {% if start_node.focus_area %}
+            **重点关注领域**：{{#start_node.focus_area#}}
+            {% endif %}
+
+            {% if start_node.accident_data %}
+            **本地事故数据（JSON格式）**：
+            以下是本地区最新的交通事故统计数据，请在课件中融入本地案例和数据，增强说服力：
+            {{#start_node.accident_data#}}
+            {% endif %}
+        vision:
+          enabled: false
+          configs:
+            variable_selector: []
+        memory:
+          enabled: false
+          window:
+            enabled: false
+            size: 50
+        context:
+          enabled: false
+          variable_selector: []
+        structured_output:
+          enabled: false
+        retry_config:
+          enabled: false
+          max_retries: 1
+          retry_interval: 1000
+          exponential_backoff:
+            enabled: false
+            multiplier: 2
+            max_interval: 10000
+      height: 90
+      id: llm_outline
+      position:
+        x: 334
+        y: 227
+      positionAbsolute:
+        x: 334
+        y: 227
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: '细化每页幻灯片的讲稿、法条引用、案例和互动问题'
+        title: 课件内容细化
+        type: llm
+        model:
+          provider: deepseek
+          name: deepseek-chat
+          mode: chat
+          completion_params:
+            temperature: 0.5
+        prompt_template:
+        - role: system
+          text: |
+            你是一名交通安全教育讲师，擅长将课件大纲细化为完整的教学内容。你的任务是在已有大纲基础上，为每一页幻灯片补充详细内容。
+
+            ## 细化要求
+
+            对每一页幻灯片，你需要补充：
+
+            ### 1. 详细讲稿
+            - 写出讲师逐字稿，包含开场白、过渡语、总结语
+            - 语言风格需匹配目标受众（学生用活泼语言，老年人用亲切语言等）
+            - 每页讲稿约200-400字
+
+            ### 2. 法条全文引用
+            - 将大纲中提到的法条补充完整条文
+            - 常用法条：
+              - 《道路交通安全法》及实施条例
+              - 《刑法》第133条（交通肇事罪）、133条之一（危险驾驶罪）
+              - 各地方性法规
+            - 用通俗语言解释法条含义
+
+            ### 3. 真实案例（脱敏处理）
+            - 为关键页面配备1-2个真实案例
+            - 案例格式：时间+地点+事故经过+原因分析+后果+教训
+            - 所有人名使用化名，地点模糊化处理
+            - 案例要与该页主题紧密相关
+
+            ### 4. 互动讨论题
+            - 每3-5页设置一个互动环节
+            - 互动形式：提问、小组讨论、情景模拟、判断对错
+            - 给出参考答案和讲解要点
+
+            ## 输出格式
+
+            保持与大纲相同的Markdown格式，每页用 `---` 分隔，在原有结构上新增【详细讲稿】【案例】【互动环节】等板块。
+        - role: user
+          text: |
+            请基于以下课件大纲，细化每一页的教学内容：
+
+            {{#llm_outline.text#}}
+        vision:
+          enabled: false
+          configs:
+            variable_selector: []
+        memory:
+          enabled: false
+          window:
+            enabled: false
+            size: 50
+        context:
+          enabled: false
+          variable_selector: []
+        structured_output:
+          enabled: false
+        retry_config:
+          enabled: false
+          max_retries: 1
+          retry_interval: 1000
+          exponential_backoff:
+            enabled: false
+            multiplier: 2
+            max_interval: 10000
+      height: 90
+      id: llm_detail
+      position:
+        x: 638
+        y: 227
+      positionAbsolute:
+        x: 638
+        y: 227
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: '将课件内容解析为结构化JSON，提取幻灯片数组'
+        title: 课件结构化
+        type: code
+        code_language: python3
+        code: |
+          def main(courseware_text: str) -> dict:
+              import json
+              import re
+
+              slides = []
+              current_slide = None
+
+              # Split by slide markers: --- or ## 第X页
+              parts = re.split(r'(?:^|\n)---\s*\n|(?:^|\n)(?=## 第\d+页)', courseware_text)
+
+              for part in parts:
+                  part = part.strip()
+                  if not part:
+                      continue
+
+                  # Try to extract slide title
+                  title_match = re.match(r'##\s*第(\d+)页[：:]\s*(.+)', part)
+                  if title_match:
+                      slide_num = int(title_match.group(1))
+                      slide_title = title_match.group(2).strip()
+                  else:
+                      # Try alternative title format
+                      alt_match = re.match(r'(?:#+\s*)?(.+)', part)
+                      if alt_match and current_slide is None and len(slides) == 0:
+                          # Skip preamble text before first slide
+                          if '第' not in alt_match.group(1) and '页' not in alt_match.group(1):
+                              continue
+                      slide_num = len(slides) + 1
+                      slide_title = alt_match.group(1).strip() if alt_match else f"第{slide_num}页"
+
+                  # Extract key points
+                  points = []
+                  points_match = re.search(r'(?:\*\*要点[：:]\*\*|要点[：:])(.*?)(?=\*\*|$)', part, re.DOTALL)
+                  if points_match:
+                      for line in points_match.group(1).strip().split('\n'):
+                          line = line.strip()
+                          if line.startswith(('-', '*', '•')):
+                              points.append(re.sub(r'^[-*•]\s*', '', line))
+
+                  # Extract speaker notes
+                  notes = ""
+                  notes_match = re.search(r'(?:\*\*(?:讲者备注|详细讲稿)[：:]\*\*|讲者备注[：:])(.*?)(?=\*\*[^*]|---|\Z)', part, re.DOTALL)
+                  if notes_match:
+                      notes = notes_match.group(1).strip()
+
+                  # Extract suggested visuals
+                  visuals = ""
+                  visuals_match = re.search(r'(?:\*\*建议配图[：:]\*\*|建议配图[：:])(.*?)(?=\*\*[^*]|---|\Z)', part, re.DOTALL)
+                  if visuals_match:
+                      visuals = visuals_match.group(1).strip()
+
+                  # Extract law references
+                  laws = ""
+                  laws_match = re.search(r'(?:\*\*相关法条[：:]\*\*|相关法条[：:])(.*?)(?=\*\*[^*]|---|\Z)', part, re.DOTALL)
+                  if laws_match:
+                      laws = laws_match.group(1).strip()
+
+                  slide = {
+                      "slide_number": slide_num,
+                      "title": slide_title,
+                      "key_points": points,
+                      "speaker_notes": notes[:500] if notes else "",
+                      "suggested_visuals": visuals[:200] if visuals else "",
+                      "law_references": laws[:300] if laws else ""
+                  }
+
+                  slides.append(slide)
+
+              # If no slides were parsed, create a single slide with the full text
+              if not slides:
+                  slides.append({
+                      "slide_number": 1,
+                      "title": "课件内容",
+                      "key_points": [],
+                      "speaker_notes": courseware_text[:500],
+                      "suggested_visuals": "",
+                      "law_references": ""
+                  })
+
+              slides_json = json.dumps({
+                  "slides": slides,
+                  "total_slides": len(slides)
+              }, ensure_ascii=False)
+
+              return {
+                  "slides_json": slides_json,
+                  "slide_count": len(slides)
+              }
+        variables:
+        - value_selector:
+          - llm_detail
+          - text
+          variable: courseware_text
+        outputs:
+          slides_json:
+            type: string
+            children: null
+          slide_count:
+            type: number
+            children: null
+      height: 90
+      id: code_extract
+      position:
+        x: 942
+        y: 227
+      positionAbsolute:
+        x: 942
+        y: 227
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: ''
+        outputs:
+        - value_selector:
+          - llm_detail
+          - text
+          value_type: string
+          variable: result
+        - value_selector:
+          - code_extract
+          - slides_json
+          value_type: string
+          variable: slides_json
+        - value_selector:
+          - code_extract
+          - slide_count
+          value_type: number
+          variable: slide_count
+        selected: false
+        title: 输出
+        type: end
+      height: 90
+      id: end_node
+      position:
+        x: 1246
+        y: 227
+      positionAbsolute:
+        x: 1246
+        y: 227
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    viewport:
+      x: 0
+      y: 0
+      zoom: 0.7

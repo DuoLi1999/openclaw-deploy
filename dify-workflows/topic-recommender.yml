@@ -1,0 +1,302 @@
+app:
+  description: '基于当前季节、节假日和本地事故数据，智能推荐交警宣传选题，输出结构化主题JSON'
+  icon: "\U0001F4A1"
+  icon_background: '#D5E8FF'
+  icon_type: emoji
+  mode: workflow
+  name: topic-recommender
+  use_icon_as_answer_icon: false
+dependencies: []
+kind: app
+version: 0.3.1
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      enabled: false
+    opening_statement: ''
+    retriever_resource:
+      enabled: false
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: start
+        targetType: llm
+      id: start-to-llm-analyze
+      source: start_node
+      sourceHandle: source
+      target: llm_analyze
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: code
+      id: llm-analyze-to-code
+      source: llm_analyze
+      sourceHandle: source
+      target: code_parse
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: end
+      id: code-to-end
+      source: code_parse
+      sourceHandle: source
+      target: end_node
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        desc: '输入当前月份、事故数据和近期已发布主题'
+        selected: false
+        title: 开始
+        type: start
+        variables:
+        - label: 当前月份
+          max_length: 500
+          options: []
+          required: true
+          type: paragraph
+          variable: current_month
+        - label: 事故数据
+          max_length: 10000
+          options: []
+          required: true
+          type: paragraph
+          variable: accident_data
+        - label: 近期已发布主题
+          max_length: 5000
+          options: []
+          required: false
+          type: paragraph
+          variable: recent_topics
+      height: 90
+      id: start_node
+      position:
+        x: 30
+        y: 227
+      positionAbsolute:
+        x: 30
+        y: 227
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: '分析季节、节假日和事故数据，推荐6个宣传选题'
+        title: 数据分析与主题推荐
+        type: llm
+        model:
+          provider: deepseek
+          name: deepseek-chat
+          mode: chat
+          completion_params:
+            temperature: 0.7
+        prompt_template:
+        - role: system
+          text: |
+            You are a traffic safety publicity strategy expert. Analyze the current month/season, upcoming holidays, and accident data to recommend the most impactful publicity topics. Consider:
+            - Seasonal risks (ice/snow in winter, rain in summer, etc.)
+            - Upcoming holidays and events (Spring Festival, National Day, school season, 122 Traffic Safety Day)
+            - High-risk areas and groups from accident data
+            - High-frequency violation types
+            - Balance between warning/education and positive/warm content
+
+            Output exactly 6 recommended topics, each with: title, reason (why this topic now), suggested audience, urgency level (高/中/低)
+
+            Output MUST be valid JSON array format. Do not include any extra text outside the JSON array. Example format:
+
+            ```json
+            [
+              {
+                "title": "主题标题",
+                "reason": "推荐该主题的原因",
+                "audience": "建议受众",
+                "urgency": "高"
+              }
+            ]
+            ```
+
+            Rules:
+            1. Each topic must have all four fields: title, reason, audience, urgency
+            2. urgency must be one of: 高, 中, 低
+            3. reason should explain why this topic is relevant NOW given the current month and data
+            4. Avoid recommending topics that overlap with recently published ones
+            5. Ensure a mix of urgency levels (not all 高 or all 低)
+            6. Output language: Chinese
+        - role: user
+          text: |
+            请根据以下信息推荐6个交警宣传选题：
+
+            **当前月份**：{{#start_node.current_month#}}
+
+            **本地事故数据**：
+            {{#start_node.accident_data#}}
+
+            {% if start_node.recent_topics %}
+            **近期已发布主题（请避免重复）**：
+            {{#start_node.recent_topics#}}
+            {% endif %}
+        vision:
+          enabled: false
+          configs:
+            variable_selector: []
+        memory:
+          enabled: false
+          window:
+            enabled: false
+            size: 50
+        context:
+          enabled: false
+          variable_selector: []
+        structured_output:
+          enabled: false
+        retry_config:
+          enabled: false
+          max_retries: 1
+          retry_interval: 1000
+          exponential_backoff:
+            enabled: false
+            multiplier: 2
+            max_interval: 10000
+      height: 90
+      id: llm_analyze
+      position:
+        x: 334
+        y: 227
+      positionAbsolute:
+        x: 334
+        y: 227
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: '从LLM输出中提取并校验JSON数组'
+        title: JSON提取
+        type: code
+        code_language: python3
+        code: |
+          def main(llm_text: str) -> dict:
+              import json
+
+              try:
+                  text = llm_text.strip()
+
+                  # Extract JSON from markdown code blocks if present
+                  if '```json' in text:
+                      text = text.split('```json')[1].split('```')[0].strip()
+                  elif '```' in text:
+                      text = text.split('```')[1].split('```')[0].strip()
+
+                  # Try to find JSON array in the text
+                  start_idx = text.find('[')
+                  end_idx = text.rfind(']')
+                  if start_idx != -1 and end_idx != -1:
+                      text = text[start_idx:end_idx + 1]
+
+                  topics = json.loads(text)
+
+                  if not isinstance(topics, list):
+                      return {"topics_json": json.dumps([], ensure_ascii=False)}
+
+                  # Validate each topic has required fields
+                  required_fields = {"title", "reason", "audience", "urgency"}
+                  valid_urgency = {"高", "中", "低"}
+                  validated = []
+
+                  for topic in topics:
+                      if not isinstance(topic, dict):
+                          continue
+                      if not required_fields.issubset(topic.keys()):
+                          continue
+                      if topic.get("urgency") not in valid_urgency:
+                          topic["urgency"] = "中"
+                      validated.append({
+                          "title": str(topic["title"]),
+                          "reason": str(topic["reason"]),
+                          "audience": str(topic["audience"]),
+                          "urgency": str(topic["urgency"])
+                      })
+
+                  return {"topics_json": json.dumps(validated, ensure_ascii=False)}
+
+              except Exception:
+                  return {"topics_json": json.dumps([], ensure_ascii=False)}
+        variables:
+        - value_selector:
+          - llm_analyze
+          - text
+          variable: llm_text
+        outputs:
+          topics_json:
+            type: string
+            children: null
+      height: 90
+      id: code_parse
+      position:
+        x: 638
+        y: 227
+      positionAbsolute:
+        x: 638
+        y: 227
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: ''
+        outputs:
+        - value_selector:
+          - llm_analyze
+          - text
+          value_type: string
+          variable: result
+        - value_selector:
+          - code_parse
+          - topics_json
+          value_type: string
+          variable: topics_json
+        selected: false
+        title: 输出
+        type: end
+      height: 90
+      id: end_node
+      position:
+        x: 942
+        y: 227
+      positionAbsolute:
+        x: 942
+        y: 227
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    viewport:
+      x: 0
+      y: 0
+      zoom: 0.7

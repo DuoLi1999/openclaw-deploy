@@ -1,0 +1,349 @@
+app:
+  description: '基于事故数据分析，针对特定高风险路段、人群或违法类型生成精准宣传指令包'
+  icon: "\U0001F3AF"
+  icon_background: '#FFD5D5'
+  icon_type: emoji
+  mode: workflow
+  name: precision-outreach
+  use_icon_as_answer_icon: false
+dependencies: []
+kind: app
+version: 0.3.1
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      enabled: false
+    opening_statement: ''
+    retriever_resource:
+      enabled: false
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: start
+        targetType: llm
+      id: start-to-llm-analysis
+      source: start_node
+      sourceHandle: source
+      target: llm_analysis
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: code
+      id: llm-analysis-to-code-extract
+      source: llm_analysis
+      sourceHandle: source
+      target: code_extract
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: end
+      id: code-extract-to-end
+      source: code_extract
+      sourceHandle: source
+      target: end_node
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        desc: '输入事故数据和精准宣传目标参数'
+        selected: false
+        title: 开始
+        type: start
+        variables:
+        - label: 事故数据(JSON)
+          max_length: 10000
+          options: []
+          required: true
+          type: paragraph
+          variable: accident_data
+        - label: 目标类型
+          max_length: null
+          options:
+          - 高风险路段
+          - 高风险人群
+          - 高发违法类型
+          required: true
+          type: select
+          variable: target_type
+        - label: 目标名称
+          max_length: 200
+          options: []
+          required: true
+          type: paragraph
+          variable: target_name
+        - label: 输出格式
+          max_length: null
+          options:
+          - 宣传指令包
+          - 定制化方案
+          - 警示材料
+          required: true
+          type: select
+          variable: output_format
+      height: 90
+      id: start_node
+      position:
+        x: 30
+        y: 227
+      positionAbsolute:
+        x: 30
+        y: 227
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: '基于事故数据深度分析目标对象，生成精准宣传方案'
+        title: 精准分析与方案生成
+        type: llm
+        model:
+          provider: deepseek
+          name: deepseek-chat
+          mode: chat
+          completion_params:
+            temperature: 0.6
+        prompt_template:
+        - role: system
+          text: |
+            你是一名精准交通安全宣传专家。基于事故数据分析，针对特定高风险路段、高风险人群或高发违法类型，生成精准定向的宣传方案。
+
+            ## 分析框架
+
+            ### 针对高风险路段
+            - 分析该路段事故成因：道路设计、视距、弯道、坡度、交叉口等
+            - 分析时间规律：高发时段、季节性特征、工作日/周末差异
+            - 分析天气因素：雨雾冰雪对该路段的特殊影响
+            - 生成路段专属安全提示信息，包含具体里程桩号、方向、限速等
+            - 建议现场宣传点位（如收费站、服务区、进出匝道）
+
+            ### 针对高风险人群
+            - 分析该人群行为特征：常见违法类型、出行时段、使用车辆类型
+            - 分析违法动机：赶时间、侥幸心理、规则意识淡薄等
+            - 创建受众适配内容：
+              - 农村老年人：使用方言元素、大字版、广播形式
+              - 外卖骑手：短视频、企业内训材料、APP推送文案
+              - 货车司机：服务区海报、车载广播、微信群消息
+              - 新手驾驶员：驾校合作内容、短视频教程
+              - 学生群体：校园宣传、动漫风格、互动问答
+            - 触达渠道匹配人群活跃场景
+
+            ### 针对高发违法类型
+            - 分析该违法类型的严重程度：事故率、伤亡率、社会危害
+            - 分析趋势变化：同比增减、是否有季节性波动
+            - 创建震慑+教育双轨内容：
+              - 震慑线：处罚标准、典型案例、执法现场
+              - 教育线：正确做法、替代方案、习惯养成
+            - 建议专项整治配合宣传方案
+
+            ## 输出结构要求
+
+            请严格按以下四部分输出：
+
+            ### 一、数据分析摘要
+            - 提取与目标对象直接相关的关键统计数据
+            - 发现数据中的规律和异常
+            - 量化风险等级
+
+            ### 二、宣传策略建议
+            - 内容方向定位
+            - 语气风格建议（严肃警示/温情提醒/幽默科普/数据说服）
+            - 渠道组合推荐
+            - 投放时机建议
+
+            ### 三、具体内容方案
+            输出3-5条具体内容方案，每条包含：
+            - 内容标题
+            - 目标平台（微博/微信公众号/抖音/快手/头条/线下）
+            - 内容形式（图文/短视频/海报/H5/广播/传单）
+            - 核心信息（1-2句话概括要传递的关键信息）
+            - 内容大纲（3-5个要点）
+
+            ### 四、投放建议
+            - 投放时间窗口
+            - 投放频率
+            - 渠道优先级
+            - 效果监测指标建议
+        - role: user
+          text: |
+            请基于以下事故数据，为指定目标生成精准宣传方案：
+
+            **目标类型**：{{#start_node.target_type#}}
+            **目标名称**：{{#start_node.target_name#}}
+            **输出格式**：{{#start_node.output_format#}}
+
+            **事故统计数据（JSON格式）**：
+            {{#start_node.accident_data#}}
+
+            请深入分析数据中与"{{#start_node.target_name#}}"相关的信息，生成针对性强、可直接执行的{{#start_node.output_format#}}。
+        vision:
+          enabled: false
+          configs:
+            variable_selector: []
+        memory:
+          enabled: false
+          window:
+            enabled: false
+            size: 50
+        context:
+          enabled: false
+          variable_selector: []
+        structured_output:
+          enabled: false
+        retry_config:
+          enabled: false
+          max_retries: 1
+          retry_interval: 1000
+          exponential_backoff:
+            enabled: false
+            multiplier: 2
+            max_interval: 10000
+      height: 90
+      id: llm_analysis
+      position:
+        x: 334
+        y: 227
+      positionAbsolute:
+        x: 334
+        y: 227
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: '从LLM分析文本中提取结构化JSON方案数据'
+        title: 方案结构化提取
+        type: code
+        code_language: python3
+        code: |
+          def main(analysis_text: str) -> dict:
+              import json
+              import re
+
+              analysis_summary = ""
+              strategy = ""
+              content_plans = []
+              delivery_suggestion = ""
+
+              sections = re.split(r'###\s+', analysis_text)
+
+              for section in sections:
+                  section_stripped = section.strip()
+                  if section_stripped.startswith('一、') or section_stripped.startswith('一,') or '数据分析摘要' in section_stripped[:20]:
+                      analysis_summary = section_stripped
+                  elif section_stripped.startswith('二、') or section_stripped.startswith('二,') or '宣传策略建议' in section_stripped[:20]:
+                      strategy = section_stripped
+                  elif section_stripped.startswith('三、') or section_stripped.startswith('三,') or '具体内容方案' in section_stripped[:20]:
+                      plan_blocks = re.split(r'\n(?=(?:\d+[.、）)]|[-*]\s*(?:内容|方案)\s*\d))', section_stripped)
+                      for block in plan_blocks:
+                          block = block.strip()
+                          if not block:
+                              continue
+                          plan = {}
+                          title_match = re.search(r'(?:内容标题|标题)[：:]\s*(.+)', block)
+                          if title_match:
+                              plan['title'] = title_match.group(1).strip()
+                          platform_match = re.search(r'(?:目标平台|平台)[：:]\s*(.+)', block)
+                          if platform_match:
+                              plan['platform'] = platform_match.group(1).strip()
+                          format_match = re.search(r'(?:内容形式|形式)[：:]\s*(.+)', block)
+                          if format_match:
+                              plan['format'] = format_match.group(1).strip()
+                          message_match = re.search(r'(?:核心信息|核心消息)[：:]\s*(.+)', block)
+                          if message_match:
+                              plan['key_message'] = message_match.group(1).strip()
+                          if plan.get('title'):
+                              content_plans.append(plan)
+                  elif section_stripped.startswith('四、') or section_stripped.startswith('四,') or '投放建议' in section_stripped[:20]:
+                      delivery_suggestion = section_stripped
+
+              outreach_data = {
+                  "analysis_summary": analysis_summary,
+                  "strategy": strategy,
+                  "content_plans": content_plans,
+                  "delivery_suggestion": delivery_suggestion
+              }
+
+              outreach_json = json.dumps(outreach_data, ensure_ascii=False)
+
+              return {
+                  "outreach_json": outreach_json
+              }
+        variables:
+        - value_selector:
+          - llm_analysis
+          - text
+          variable: analysis_text
+        outputs:
+          outreach_json:
+            type: string
+            children: null
+      height: 90
+      id: code_extract
+      position:
+        x: 638
+        y: 227
+      positionAbsolute:
+        x: 638
+        y: 227
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: ''
+        outputs:
+        - value_selector:
+          - llm_analysis
+          - text
+          value_type: string
+          variable: result
+        - value_selector:
+          - code_extract
+          - outreach_json
+          value_type: string
+          variable: outreach_json
+        selected: false
+        title: 输出
+        type: end
+      height: 90
+      id: end_node
+      position:
+        x: 942
+        y: 227
+      positionAbsolute:
+        x: 942
+        y: 227
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    viewport:
+      x: 0
+      y: 0
+      zoom: 0.7

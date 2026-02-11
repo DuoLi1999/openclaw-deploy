@@ -1,0 +1,79 @@
+{
+  "platform": "weibo",
+  "period": "2026-01",
+  "summary": {
+    "totalPosts": 25,
+    "totalReads": 485000,
+    "totalLikes": 6800,
+    "totalShares": 3200,
+    "totalComments": 2150,
+    "newFollowers": 580,
+    "avgReadPerPost": 19400,
+    "avgInteractionRate": 0.025
+  },
+  "weeklyTrend": [
+    { "week": 1, "posts": 7, "reads": 138000, "likes": 1950, "shares": 920 },
+    { "week": 2, "posts": 6, "reads": 110000, "likes": 1520, "shares": 740 },
+    { "week": 3, "posts": 6, "reads": 118000, "likes": 1680, "shares": 780 },
+    { "week": 4, "posts": 6, "reads": 119000, "likes": 1650, "shares": 760 }
+  ],
+  "topContent": [
+    {
+      "title": "【春运直击】返乡高峰首日全市路况实时播报",
+      "publishDate": "2026-01-10",
+      "reads": 48500,
+      "likes": 1250,
+      "shares": 680,
+      "comments": 435,
+      "interactionRate": 0.049,
+      "topic": "春运安全"
+    },
+    {
+      "title": "男子醉驾逆行被查，竟称[只喝了一瓶啤酒]",
+      "publishDate": "2026-01-06",
+      "reads": 42300,
+      "likes": 980,
+      "shares": 520,
+      "comments": 385,
+      "interactionRate": 0.045,
+      "topic": "酒驾警示"
+    },
+    {
+      "title": "交警雪中推车暖人心 市民拍下感人一幕",
+      "publishDate": "2026-01-17",
+      "reads": 38700,
+      "likes": 1580,
+      "shares": 720,
+      "comments": 310,
+      "interactionRate": 0.067,
+      "topic": "交警正能量"
+    },
+    {
+      "title": "大雾封路！这些高速路段临时管制（附绕行方案）",
+      "publishDate": "2026-01-22",
+      "reads": 35200,
+      "likes": 640,
+      "shares": 480,
+      "comments": 268,
+      "interactionRate": 0.039,
+      "topic": "恶劣天气"
+    },
+    {
+      "title": "外卖骑手闯红灯被罚后发文道歉：安全比速度重要",
+      "publishDate": "2026-01-28",
+      "reads": 31600,
+      "likes": 890,
+      "shares": 415,
+      "comments": 520,
+      "interactionRate": 0.058,
+      "topic": "电动车安全"
+    }
+  ],
+  "topicAnalysis": [
+    { "topic": "春运安全", "posts": 8, "avgReads": 22500, "avgInteractionRate": 0.032 },
+    { "topic": "酒驾警示", "posts": 5, "avgReads": 18600, "avgInteractionRate": 0.038 },
+    { "topic": "恶劣天气", "posts": 4, "avgReads": 16200, "avgInteractionRate": 0.028 },
+    { "topic": "电动车安全", "posts": 4, "avgReads": 14800, "avgInteractionRate": 0.035 },
+    { "topic": "交警正能量", "posts": 4, "avgReads": 24500, "avgInteractionRate": 0.058 }
+  ]
+}

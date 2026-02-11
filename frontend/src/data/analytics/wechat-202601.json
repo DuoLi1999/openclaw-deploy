@@ -1,0 +1,79 @@
+{
+  "platform": "wechat",
+  "period": "2026-01",
+  "summary": {
+    "totalPosts": 15,
+    "totalReads": 125000,
+    "totalLikes": 3200,
+    "totalShares": 1800,
+    "totalComments": 450,
+    "newFollowers": 320,
+    "avgReadPerPost": 8333,
+    "avgInteractionRate": 0.043
+  },
+  "weeklyTrend": [
+    { "week": 1, "posts": 4, "reads": 35000, "likes": 900, "shares": 500 },
+    { "week": 2, "posts": 3, "reads": 28000, "likes": 700, "shares": 400 },
+    { "week": 3, "posts": 4, "reads": 32000, "likes": 850, "shares": 480 },
+    { "week": 4, "posts": 4, "reads": 30000, "likes": 750, "shares": 420 }
+  ],
+  "topContent": [
+    {
+      "title": "春运安全第一课：高速公路行车必备指南",
+      "publishDate": "2026-01-08",
+      "reads": 18500,
+      "likes": 520,
+      "shares": 380,
+      "comments": 85,
+      "interactionRate": 0.053,
+      "topic": "春运安全"
+    },
+    {
+      "title": "岁末年初酒驾查处典型案例曝光",
+      "publishDate": "2026-01-03",
+      "reads": 15200,
+      "likes": 410,
+      "shares": 320,
+      "comments": 92,
+      "interactionRate": 0.054,
+      "topic": "酒驾警示"
+    },
+    {
+      "title": "暴雪预警！交警教你冰雪路面安全驾驶技巧",
+      "publishDate": "2026-01-15",
+      "reads": 12800,
+      "likes": 365,
+      "shares": 290,
+      "comments": 68,
+      "interactionRate": 0.056,
+      "topic": "恶劣天气"
+    },
+    {
+      "title": "电动车头盔佩戴率专项整治行动启动",
+      "publishDate": "2026-01-20",
+      "reads": 9600,
+      "likes": 280,
+      "shares": 195,
+      "comments": 55,
+      "interactionRate": 0.055,
+      "topic": "电动车安全"
+    },
+    {
+      "title": "零下15度坚守岗位：致敬春运中的交警们",
+      "publishDate": "2026-01-25",
+      "reads": 11400,
+      "likes": 485,
+      "shares": 310,
+      "comments": 76,
+      "interactionRate": 0.076,
+      "topic": "交警正能量"
+    }
+  ],
+  "topicAnalysis": [
+    { "topic": "春运安全", "posts": 5, "avgReads": 12000, "avgInteractionRate": 0.048 },
+    { "topic": "酒驾警示", "posts": 3, "avgReads": 9500, "avgInteractionRate": 0.052 },
+    { "topic": "恶劣天气", "posts": 3, "avgReads": 8800, "avgInteractionRate": 0.050 },
+    { "topic": "电动车安全", "posts": 2, "avgReads": 7600, "avgInteractionRate": 0.046 },
+    { "topic": "交警正能量", "posts": 2, "avgReads": 10200, "avgInteractionRate": 0.068 }
+  ]
+}

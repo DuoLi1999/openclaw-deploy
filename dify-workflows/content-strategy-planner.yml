@@ -122,6 +122,12 @@ workflow:
           required: false
           type: paragraph
           variable: context
+        - label: 事故数据(JSON)
+          max_length: 10000
+          options: []
+          required: false
+          type: paragraph
+          variable: accident_data
       height: 90
       id: start_node
       position:
@@ -149,6 +155,8 @@ workflow:
         - role: system
           text: |
             你是一名资深的政务新媒体内容策略师，专注于交警宣传领域。你的目标是帮助交警宣传部门规划系统化的内容策略，让宣传内容既能触达目标受众（可搜索），又能引发传播（可分享）。
+
+            如果提供了本地事故数据，你必须深入分析其中的高风险路段、高发违法类型、高风险人群、时段分布和天气关联等维度，将数据洞察作为内容策略的核心依据。确保宣传主题精准匹配本地实际安全风险。
 
             ## 核心方法论
 
@@ -257,6 +265,12 @@ workflow:
             **覆盖平台**：{{#start_node.platforms#}}
             **时间周期**：{{#start_node.time_range#}}
             **补充背景**：{{#start_node.context#}}
+
+            {% if start_node.accident_data %}
+            **本地事故数据（JSON格式）**：
+            以下是本地区最新的交通事故统计数据，请在策略规划中重点参考高风险路段、高风险人群、高发违法类型等数据，确保宣传重点与实际安全风险精准匹配：
+            {{#start_node.accident_data#}}
+            {% endif %}
         vision:
           enabled: false
           configs:

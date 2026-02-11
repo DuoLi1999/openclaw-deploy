@@ -1,0 +1,412 @@
+app:
+  description: '分析舆情事件并生成交警应对策略指导方案'
+  icon: "\U0001F6A8"
+  icon_background: '#FFD5D5'
+  icon_type: emoji
+  mode: workflow
+  name: public-opinion
+  use_icon_as_answer_icon: false
+dependencies: []
+kind: app
+version: 0.3.1
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      enabled: false
+    opening_statement: ''
+    retriever_resource:
+      enabled: false
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: start
+        targetType: llm
+      id: start-to-llm-analysis
+      source: start_node
+      sourceHandle: source
+      target: llm_analysis
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: llm
+      id: llm-analysis-to-llm-response
+      source: llm_analysis
+      sourceHandle: source
+      target: llm_response
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: code
+      id: llm-response-to-code-extract
+      source: llm_response
+      sourceHandle: source
+      target: code_extract
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: end
+      id: code-extract-to-end
+      source: code_extract
+      sourceHandle: source
+      target: end_node
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        desc: '输入舆情事件描述和处置参数'
+        selected: false
+        title: 开始
+        type: start
+        variables:
+        - label: 舆情事件描述
+          max_length: 2000
+          options: []
+          required: true
+          type: paragraph
+          variable: event_description
+        - label: 事件类型
+          max_length: null
+          options:
+          - 交通事故舆情
+          - 执法争议舆情
+          - 政策变化舆情
+          - 服务投诉舆情
+          required: true
+          type: select
+          variable: event_type
+        - label: 紧急程度
+          max_length: null
+          options:
+          - 紧急(2小时内响应)
+          - 重要(24小时内响应)
+          - 一般(48小时内响应)
+          required: true
+          type: select
+          variable: urgency_level
+        - label: 已有官方回应
+          max_length: 1000
+          options: []
+          required: false
+          type: paragraph
+          variable: existing_response
+      height: 90
+      id: start_node
+      position:
+        x: 30
+        y: 227
+      positionAbsolute:
+        x: 30
+        y: 227
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: '深度分析舆情事件，评估风险等级，识别利益相关方，预判舆情走势'
+        title: 舆情分析与风险评估
+        type: llm
+        model:
+          provider: deepseek
+          name: deepseek-chat
+          mode: chat
+          completion_params:
+            temperature: 0.5
+        prompt_template:
+        - role: system
+          text: |
+            你是一名交警舆情危机管理专家。请对舆情事件进行深度分析，评估风险等级，识别关键利益相关方，预判公众情绪走势。
+
+            请严格按以下四部分输出分析报告：
+
+            ### 一、事件摘要
+            - 用2-3句话概括事件核心内容
+            - 明确事件发生的时间、地点、涉及人员
+            - 标注事件当前传播阶段（萌芽期/扩散期/爆发期/消退期）
+
+            ### 二、风险评估
+            - **严重程度**：低/中/高/极高，并说明理由
+            - **扩散潜力**：评估事件进一步扩散的可能性和速度
+            - **公众情绪**：当前公众情绪倾向（愤怒/质疑/同情/恐慌/理性关注）
+            - **媒体关注度**：是否已有主流媒体介入，是否有大V参与传播
+
+            ### 三、利益相关方分析
+            - 列出所有关键利益相关方（当事人、家属、目击者、媒体、上级部门、公众等）
+            - 分析各方诉求和立场
+            - 识别潜在的舆论联盟和对立关系
+
+            ### 四、舆情走势预判
+            - 未来24-72小时可能的发展路径（最好/最可能/最坏）
+            - 可能出现的舆论转折点
+            - 需要重点防范的风险节点
+        - role: user
+          text: |
+            请分析以下舆情事件：
+
+            **事件类型**：{{#start_node.event_type#}}
+            **紧急程度**：{{#start_node.urgency_level#}}
+
+            **事件描述**：
+            {{#start_node.event_description#}}
+
+            **已有官方回应**：
+            {{#start_node.existing_response#}}
+
+            请进行全面的舆情分析与风险评估。
+        vision:
+          enabled: false
+          configs:
+            variable_selector: []
+        memory:
+          enabled: false
+          window:
+            enabled: false
+            size: 50
+        context:
+          enabled: false
+          variable_selector: []
+        structured_output:
+          enabled: false
+        retry_config:
+          enabled: false
+          max_retries: 1
+          retry_interval: 1000
+          exponential_backoff:
+            enabled: false
+            multiplier: 2
+            max_interval: 10000
+      height: 90
+      id: llm_analysis
+      position:
+        x: 334
+        y: 227
+      positionAbsolute:
+        x: 334
+        y: 227
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: '基于风险分析生成全面的应对策略和分平台回应模板'
+        title: 应对策略生成
+        type: llm
+        model:
+          provider: deepseek
+          name: deepseek-chat
+          mode: chat
+          completion_params:
+            temperature: 0.6
+        prompt_template:
+        - role: system
+          text: |
+            基于舆情风险分析结果，生成全面的应对策略方案。请严格按以下五部分输出：
+
+            ### 一、核心口径
+            - 提供3-5条关键表态要点
+            - 每条口径应简洁有力，适合各平台统一使用
+            - 注意措辞的法律合规性和情感适当性
+            - 避免推诿、冷漠或过度承诺的表述
+
+            ### 二、分平台回应模板
+            分别提供以下平台的回应模板：
+
+            **微博回应**（200字以内）：
+            - 正式但不生硬，体现态度和行动
+            - 适当使用话题标签
+
+            **微信公众号声明**（500-800字）：
+            - 完整说明事件经过、处置措施、后续安排
+            - 语气庄重、信息完整
+
+            **新闻媒体通稿**（300-500字）：
+            - 客观陈述事实
+            - 包含具体数据和措施
+            - 预留记者提问应答要点
+
+            ### 三、时间线行动方案
+            - 按时间节点列出具体行动（如：0-2小时、2-6小时、6-24小时、24-72小时）
+            - 每个节点的责任部门和具体操作
+            - 信息发布节奏安排
+
+            ### 四、风险缓解措施
+            - 针对最坏情况的预案
+            - 舆论反转应对方案
+            - 二次舆情防范措施
+            - 法律风险防控建议
+
+            ### 五、监控关键词
+            - 列出10-20个需要持续监控的关键词和短语
+            - 包含事件相关词、情绪词、人物词、机构词
+            - 标注需要预警的关键词组合
+        - role: user
+          text: |
+            以下是舆情分析报告，请据此生成应对策略：
+
+            {{#llm_analysis.text#}}
+        vision:
+          enabled: false
+          configs:
+            variable_selector: []
+        memory:
+          enabled: false
+          window:
+            enabled: false
+            size: 50
+        context:
+          enabled: false
+          variable_selector: []
+        structured_output:
+          enabled: false
+        retry_config:
+          enabled: false
+          max_retries: 1
+          retry_interval: 1000
+          exponential_backoff:
+            enabled: false
+            multiplier: 2
+            max_interval: 10000
+      height: 90
+      id: llm_response
+      position:
+        x: 638
+        y: 227
+      positionAbsolute:
+        x: 638
+        y: 227
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: '从应对策略文本中提取结构化JSON数据'
+        title: 策略结构化
+        type: code
+        code_language: python3
+        code: |
+          def main(response_text: str) -> dict:
+              import json
+              import re
+
+              core_messaging = ""
+              platform_responses = ""
+              timeline = ""
+              mitigation = ""
+              keywords = ""
+
+              sections = re.split(r'###\s+', response_text)
+
+              for section in sections:
+                  section_stripped = section.strip()
+                  if section_stripped.startswith('一、') or section_stripped.startswith('一,') or '核心口径' in section_stripped[:20]:
+                      core_messaging = section_stripped
+                  elif section_stripped.startswith('二、') or section_stripped.startswith('二,') or '分平台回应模板' in section_stripped[:20]:
+                      platform_responses = section_stripped
+                  elif section_stripped.startswith('三、') or section_stripped.startswith('三,') or '时间线行动方案' in section_stripped[:20]:
+                      timeline = section_stripped
+                  elif section_stripped.startswith('四、') or section_stripped.startswith('四,') or '风险缓解措施' in section_stripped[:20]:
+                      mitigation = section_stripped
+                  elif section_stripped.startswith('五、') or section_stripped.startswith('五,') or '监控关键词' in section_stripped[:20]:
+                      keywords = section_stripped
+
+              response_data = {
+                  "core_messaging": core_messaging,
+                  "platform_responses": platform_responses,
+                  "timeline": timeline,
+                  "mitigation": mitigation,
+                  "keywords": keywords
+              }
+
+              response_json = json.dumps(response_data, ensure_ascii=False)
+
+              return {
+                  "response_json": response_json
+              }
+        variables:
+        - value_selector:
+          - llm_response
+          - text
+          variable: response_text
+        outputs:
+          response_json:
+            type: string
+            children: null
+      height: 90
+      id: code_extract
+      position:
+        x: 942
+        y: 227
+      positionAbsolute:
+        x: 942
+        y: 227
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: ''
+        outputs:
+        - value_selector:
+          - llm_response
+          - text
+          value_type: string
+          variable: result
+        - value_selector:
+          - llm_analysis
+          - text
+          value_type: string
+          variable: analysis
+        - value_selector:
+          - code_extract
+          - response_json
+          value_type: string
+          variable: response_json
+        selected: false
+        title: 输出
+        type: end
+      height: 90
+      id: end_node
+      position:
+        x: 1246
+        y: 227
+      positionAbsolute:
+        x: 1246
+        y: 227
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    viewport:
+      x: 0
+      y: 0
+      zoom: 0.7

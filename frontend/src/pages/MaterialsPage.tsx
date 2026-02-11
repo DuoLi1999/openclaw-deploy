@@ -1,6 +1,5 @@
-import { useState } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import {
-  Search,
   Plus,
   BookOpen,
   MessageSquare,
@@ -8,16 +7,124 @@ import {
   Edit,
   Trash2,
   Star,
+  Database,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cases, templates, regulations } from "@/data/mock";
+import materialsData from "@/data/materials.json";
+import { MaterialCard, type Material } from "@/components/materials/MaterialCard";
+import { MaterialSearchBar } from "@/components/materials/MaterialSearchBar";
+import { TagFilter } from "@/components/materials/TagFilter";
+import { MaterialUploadDialog } from "@/components/materials/MaterialUploadDialog";
+import { runMediaSearchWorkflow } from "@/services/dify";
+
+const staticMaterials: Material[] = materialsData as Material[];
+const USER_MATERIALS_KEY = "userMaterials";
+
+function loadUserMaterials(): Material[] {
+  try {
+    const raw = localStorage.getItem(USER_MATERIALS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
 
 export function MaterialsPage() {
-  const [activeTab, setActiveTab] = useState("cases");
+  const [activeTab, setActiveTab] = useState("materials");
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [aiSearching, setAiSearching] = useState(false);
+  const [aiResults, setAiResults] = useState<string[] | null>(null);
+  const [aiSummary, setAiSummary] = useState<string | null>(null);
+  const [showUploadDialog, setShowUploadDialog] = useState(false);
+  const [userMaterials, setUserMaterials] = useState<Material[]>([]);
+
+  useEffect(() => {
+    setUserMaterials(loadUserMaterials());
+  }, []);
+
+  const materials = useMemo(
+    () => [...userMaterials, ...staticMaterials],
+    [userMaterials]
+  );
+
+  // Extract all unique tags from materials
+  const allTags = useMemo(() => {
+    const tagSet = new Set<string>();
+    materials.forEach((m) => m.tags.forEach((t) => tagSet.add(t)));
+    return Array.from(tagSet).sort();
+  }, []);
+
+  // Filter materials based on search term and selected tags
+  const filteredMaterials = useMemo(() => {
+    // If AI search results exist, show those
+    if (aiResults) {
+      return materials.filter((m) => aiResults.includes(m.id));
+    }
+
+    return materials.filter((m) => {
+      const matchesSearch =
+        !searchTerm ||
+        m.title.includes(searchTerm) ||
+        m.description.includes(searchTerm) ||
+        m.tags.some((t) => t.includes(searchTerm));
+      const matchesTags =
+        selectedTags.length === 0 ||
+        selectedTags.some((tag) => m.tags.includes(tag));
+      return matchesSearch && matchesTags;
+    });
+  }, [searchTerm, selectedTags, aiResults]);
+
+  const handleSearch = (query: string) => {
+    setSearchTerm(query);
+    setAiResults(null);
+    setAiSummary(null);
+  };
+
+  const handleAISearch = async (query: string) => {
+    if (!query.trim()) return;
+    setAiSearching(true);
+    setAiSummary(null);
+    try {
+      const result = await runMediaSearchWorkflow({
+        query,
+        material_type: "all",
+      });
+      // Parse matches_json to get matched IDs
+      try {
+        const matches = JSON.parse(result.matches_json);
+        if (Array.isArray(matches)) {
+          setAiResults(matches.map((m: { id: string }) => m.id));
+        }
+      } catch {
+        setAiResults(null);
+      }
+      setAiSummary(result.result);
+    } catch {
+      setAiSummary("AI 搜索暂不可用，请使用关键词搜索");
+    } finally {
+      setAiSearching(false);
+    }
+  };
+
+  const handleSaveMaterial = useCallback((material: Material) => {
+    const updated = [material, ...userMaterials];
+    setUserMaterials(updated);
+    localStorage.setItem(USER_MATERIALS_KEY, JSON.stringify(updated));
+  }, [userMaterials]);
+
+  const handleDeleteMaterial = useCallback((id: string) => {
+    // Only allow deleting user-added materials
+    if (!id.startsWith("mat-user-")) return;
+    const updated = userMaterials.filter((m) => m.id !== id);
+    setUserMaterials(updated);
+    localStorage.setItem(USER_MATERIALS_KEY, JSON.stringify(updated));
+  }, [userMaterials]);
 
   const tabs = [
+    { id: "materials", label: "素材库", icon: Database, count: materials.length },
     { id: "cases", label: "案例库", icon: BookOpen, count: cases.length },
     {
       id: "templates",
@@ -40,10 +147,13 @@ export function MaterialsPage() {
         <div>
           <h2 className="text-2xl font-bold text-gray-800 mb-1">素材库管理</h2>
           <p className="text-sm text-gray-600">
-            管理案例、话术和法规素材，支持快速检索和引用
+            管理素材、案例、话术和法规，支持 AI 语义搜索
           </p>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800 transition">
+        <button
+          onClick={() => setShowUploadDialog(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800 transition"
+        >
           <Plus className="w-5 h-5" />
           新建素材
         </button>
@@ -76,22 +186,71 @@ export function MaterialsPage() {
           </div>
         </div>
 
-        {/* Search Bar */}
-        <div className="p-6 border-b border-gray-200">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-              placeholder={`搜索${tabs.find((t) => t.id === activeTab)?.label}...`}
-            />
-          </div>
-        </div>
-
         {/* Content */}
         <div className="p-6">
+          {/* Materials Tab */}
+          {activeTab === "materials" && (
+            <div className="space-y-4">
+              <MaterialSearchBar
+                onSearch={handleSearch}
+                onAISearch={handleAISearch}
+                isSearching={aiSearching}
+                placeholder="搜索素材标题、描述、标签..."
+              />
+
+              <TagFilter
+                tags={allTags}
+                selected={selectedTags}
+                onChange={setSelectedTags}
+              />
+
+              {aiSummary && (
+                <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg text-sm text-purple-800">
+                  <span className="font-medium">AI 分析：</span>
+                  {aiSummary}
+                </div>
+              )}
+
+              <div className="text-sm text-gray-500">
+                共 {filteredMaterials.length} 个素材
+                {aiResults && (
+                  <button
+                    onClick={() => {
+                      setAiResults(null);
+                      setAiSummary(null);
+                    }}
+                    className="ml-2 text-blue-600 hover:underline"
+                  >
+                    清除 AI 搜索结果
+                  </button>
+                )}
+              </div>
+
+              <div className="space-y-3">
+                {filteredMaterials.map((material) => (
+                  <div key={material.id} className="relative">
+                    <MaterialCard material={material} />
+                    {material.id.startsWith("mat-user-") && (
+                      <button
+                        onClick={() => handleDeleteMaterial(material.id)}
+                        className="absolute top-3 right-3 p-1.5 bg-white border border-gray-200 rounded-lg hover:bg-red-50 hover:border-red-200 transition shadow-sm"
+                        title="删除素材"
+                      >
+                        <Trash2 className="w-3.5 h-3.5 text-gray-400 hover:text-red-500" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+                {filteredMaterials.length === 0 && (
+                  <div className="text-center py-8 text-gray-500">
+                    未找到匹配的素材
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Cases Tab */}
           {activeTab === "cases" && (
             <div className="space-y-4">
               {cases.map((item) => (
@@ -141,6 +300,7 @@ export function MaterialsPage() {
             </div>
           )}
 
+          {/* Templates Tab */}
           {activeTab === "templates" && (
             <div className="space-y-4">
               {templates.map((item) => (
@@ -179,6 +339,7 @@ export function MaterialsPage() {
             </div>
           )}
 
+          {/* Regulations Tab */}
           {activeTab === "regulations" && (
             <div className="space-y-4">
               {regulations.map((item) => (
@@ -210,6 +371,13 @@ export function MaterialsPage() {
           )}
         </div>
       </Card>
+
+      <MaterialUploadDialog
+        open={showUploadDialog}
+        onClose={() => setShowUploadDialog(false)}
+        onSave={handleSaveMaterial}
+        existingTags={allTags}
+      />
     </div>
   );
 }
